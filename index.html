@@ -3,72 +3,153 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>我的英文 APP</title>
+
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-  <!-- 登入區 -->
+  <!-- =========================
+       登入 / 註冊
+       ========================= -->
+
   <div id="authSection" class="container">
-    <h1>📚 我的英文 APP</h1>
 
-    <div class="card">
-      <h2 id="authTitle">登入</h2>
+    <div class="auth-card">
 
-      <input
-        type="email"
-        id="email"
-        placeholder="Email"
-        autocomplete="email"
-      >
+      <div class="app-logo">📚</div>
 
-      <input
-        type="password"
-        id="password"
-        placeholder="密碼"
-        autocomplete="current-password"
-      >
+      <h1>我的英文小學堂</h1>
 
-      <button id="loginBtn">登入</button>
-      <button id="signupBtn" class="secondary">註冊</button>
+      <p class="subtitle">
+        歡迎回來！
+      </p>
 
-      <p id="authMessage"></p>
+      <div class="form-group">
+
+        <label for="username">
+          👤 帳號名稱
+        </label>
+
+        <input
+          type="text"
+          id="username"
+          placeholder="請輸入帳號名稱"
+          autocomplete="username"
+          maxlength="30"
+        >
+
+      </div>
+
+      <div class="form-group">
+
+        <label for="password">
+          🔒 密碼
+        </label>
+
+        <input
+          type="password"
+          id="password"
+          placeholder="請輸入密碼"
+          autocomplete="current-password"
+        >
+
+      </div>
+
+      <button id="loginBtn" class="primary-btn">
+        🚀 登入
+      </button>
+
+      <button id="signupBtn" class="secondary-btn">
+        ✨ 建立新帳號
+      </button>
+
+      <p id="authMessage" class="message"></p>
+
+      <p class="account-hint">
+        帳號名稱可使用中文、英文、數字、底線或連字號
+      </p>
+
     </div>
+
   </div>
 
 
-  <!-- APP 主畫面 -->
+  <!-- =========================
+       APP 主畫面
+       ========================= -->
+
   <div id="appSection" class="container hidden">
 
-    <header>
+    <header class="app-header">
+
       <div>
-        <h1>📚 我的英文 APP</h1>
-        <p id="userEmail"></p>
+
+        <div class="app-title">
+          📚 我的英文小學堂
+        </div>
+
+        <p id="userName">
+          歡迎！
+        </p>
+
       </div>
 
-      <button id="logoutBtn" class="logout">登出</button>
+      <button id="logoutBtn" class="logout-btn">
+        登出
+      </button>
+
     </header>
 
-    <div class="card">
-      <h2>🔍 我的單字</h2>
 
-      <input
-        type="text"
-        id="searchInput"
-        placeholder="搜尋單字..."
-      >
+    <!-- 我的單字 -->
 
-      <button id="searchBtn">搜尋</button>
+    <section class="card">
 
-      <div id="wordList"></div>
-    </div>
+      <div class="section-title">
+
+        <div>
+          <span class="section-icon">🔍</span>
+          <span>我的單字</span>
+        </div>
+
+      </div>
+
+      <div class="search-area">
+
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="搜尋單字..."
+          autocomplete="off"
+        >
+
+        <button id="searchBtn" class="search-btn">
+          搜尋
+        </button>
+
+      </div>
+
+      <div id="wordList">
+
+        <div class="loading">
+          載入中...
+        </div>
+
+      </div>
+
+    </section>
 
   </div>
 
 
   <!-- Supabase -->
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- 我的程式 -->
 
   <script src="app.js"></script>
 
