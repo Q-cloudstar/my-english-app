@@ -30,8 +30,7 @@ function usernameToInternalEmail(username) {
       )
       .join("");
 
-  return `u_${encoded}@${INTERNAL_AUTH_DOMAIN}`;
-}
+ return `u_${encoded}@${INTERNAL_AUTH_DOMAIN}`;
 
 
 // ===============================
