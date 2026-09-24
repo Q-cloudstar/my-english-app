@@ -34,6 +34,9 @@ const searchBtn = document.getElementById("searchBtn");
 
 const wordList = document.getElementById("wordList");
 
+const newWordInput = document.getElementById("newWordInput");
+const addWordBtn = document.getElementById("addWordBtn");
+const addWordMessage = document.getElementById("addWordMessage");
 
 // ===============================
 // 內部 Auth Email
@@ -511,6 +514,9 @@ async function loadWords(searchText = "") {
 // ===============================
 // 顯示單字
 // ===============================
+// ===============================
+// 顯示單字列表
+// ===============================
 
 function displayWords(words) {
 
@@ -531,110 +537,322 @@ function displayWords(words) {
     const div =
       document.createElement("div");
 
-
-    div.className =
-      "word-item";
+    div.className = "word-item";
 
 
-    let html = "";
+    div.innerHTML = `
+      <div class="word-row">
 
+        <div class="word-name">
+          ${escapeHtml(word.word)}
+        </div>
 
-    // 單字
+        <button
+          class="learn-again-btn"
+          data-word-id="${escapeHtml(word.id)}"
+        >
+          Learn Again
+        </button>
 
-    html += `
-      <div class="word">
-        ${escapeHtml(word.word)}
       </div>
     `;
-
-
-    // 音標
-
-    if (word.phonetic) {
-
-      html += `
-        <div class="phonetic">
-          ${escapeHtml(word.phonetic)}
-        </div>
-      `;
-
-    }
-
-
-    // 詞性
-
-    if (word.part_of_speech) {
-
-      html += `
-        <div class="part-of-speech">
-          ${escapeHtml(word.part_of_speech)}
-        </div>
-      `;
-
-    }
-
-
-    // 中文意思
-
-    if (word.chinese_meaning) {
-
-      html += `
-        <div class="meaning">
-          ${escapeHtml(word.chinese_meaning)}
-        </div>
-      `;
-
-    }
-
-
-    // 英文定義
-
-    if (word.definition_en) {
-
-      html += `
-        <div class="definition">
-          ${escapeHtml(word.definition_en)}
-        </div>
-      `;
-
-    }
-
-
-    // 英文例句
-
-    if (word.example_en) {
-
-      html += `
-        <div class="example">
-          🇬🇧 ${escapeHtml(word.example_en)}
-        </div>
-      `;
-
-    }
-
-
-    // 中文例句
-
-    if (word.example_zh) {
-
-      html += `
-        <div class="example">
-          🇹🇼 ${escapeHtml(word.example_zh)}
-        </div>
-      `;
-
-    }
-
-
-    div.innerHTML = html;
 
 
     wordList.appendChild(div);
 
   });
 
+
+  // ===============================
+  // Learn Again 按鈕
+  // ===============================
+
+  const learnAgainButtons =
+    document.querySelectorAll(".learn-again-btn");
+
+
+  learnAgainButtons.forEach(button => {
+
+    button.addEventListener("click", () => {
+
+      const wordId =
+        button.dataset.wordId;
+
+      const selectedWord =
+        words.find(word => word.id === wordId);
+
+
+      if (selectedWord) {
+
+        showWordDetail(selectedWord);
+
+      }
+
+    });
+
+  });
+
+}
+// ===============================
+// 顯示單字詳細資料
+// ===============================
+
+function showWordDetail(word) {
+
+  wordList.innerHTML = `
+
+    <div class="word-detail">
+
+      <button
+        id="backToWordListBtn"
+        class="back-btn"
+      >
+        ← 回到我的單字
+      </button>
+
+      <div class="detail-word">
+        ${escapeHtml(word.word)}
+      </div>
+
+      ${
+        word.phonetic
+          ? `
+            <div class="detail-phonetic">
+              ${escapeHtml(word.phonetic)}
+            </div>
+          `
+          : ""
+      }
+
+      ${
+        word.part_of_speech
+          ? `
+            <div class="detail-part-of-speech">
+              ${escapeHtml(word.part_of_speech)}
+            </div>
+          `
+          : ""
+      }
+
+      ${
+        word.chinese_meaning
+          ? `
+            <div class="detail-meaning">
+              ${escapeHtml(word.chinese_meaning)}
+            </div>
+          `
+          : ""
+      }
+
+      ${
+        word.definition_en
+          ? `
+            <div class="detail-section">
+              <h3>English Definition</h3>
+              <p>
+                ${escapeHtml(word.definition_en)}
+              </p>
+            </div>
+          `
+          : ""
+      }
+
+      ${
+        word.example_en
+          ? `
+            <div class="detail-section">
+              <h3>Example</h3>
+              <p>
+                ${escapeHtml(word.example_en)}
+              </p>
+            </div>
+          `
+          : ""
+      }
+
+      ${
+        word.example_zh
+          ? `
+            <div class="detail-section">
+              <h3>中文例句</h3>
+              <p>
+                ${escapeHtml(word.example_zh)}
+              </p>
+            </div>
+          `
+          : ""
+      }
+
+      <button
+        id="speakWordBtn"
+        class="speak-btn"
+      >
+        🔊 聽發音
+      </button>
+
+    </div>
+
+  `;
+
+
+  // ===============================
+  // 回到單字列表
+  // ===============================
+
+  document
+    .getElementById("backToWordListBtn")
+    .addEventListener("click", () => {
+
+      loadWords();
+
+    });
+
+
+  // ===============================
+  // 發音
+  // ===============================
+
+  document
+    .getElementById("speakWordBtn")
+    .addEventListener("click", () => {
+
+      speakWord(word.word);
+
+    });
+
+}
+// ===============================
+// 單字發音
+// ===============================
+
+function speakWord(word) {
+
+  if (!("speechSynthesis" in window)) {
+
+    alert("你的瀏覽器不支援語音播放");
+
+    return;
+  }
+
+
+  window.speechSynthesis.cancel();
+
+
+  const speech =
+    new SpeechSynthesisUtterance(word);
+
+
+  speech.lang = "en-US";
+
+  speech.rate = 0.85;
+
+  speech.pitch = 1;
+
+
+  window.speechSynthesis.speak(speech);
+
 }
 
+// ===============================
+// 新增單字
+// ===============================
+
+addWordBtn.addEventListener("click", async () => {
+
+  const word =
+    newWordInput.value.trim();
+
+
+  // 檢查是否有輸入
+
+  if (!word) {
+
+    addWordMessage.textContent =
+      "請先輸入英文單字";
+
+    return;
+  }
+
+
+  // 確認目前有登入
+
+  const {
+    data: {
+      user
+    }
+  } = await supabaseClient.auth.getUser();
+
+
+  if (!user) {
+
+    addWordMessage.textContent =
+      "請先登入";
+
+    return;
+  }
+
+
+  addWordMessage.textContent =
+    "新增中...";
+
+
+  // 存入 Supabase words 表
+
+  const {
+    error
+  } = await supabaseClient
+    .from("words")
+    .insert({
+
+      word: word,
+
+      user_id: user.id
+
+    });
+
+
+  // 新增失敗
+
+  if (error) {
+
+    console.error(error);
+
+    addWordMessage.textContent =
+      "新增失敗：" + error.message;
+
+    return;
+  }
+
+
+  // 新增成功
+
+  addWordMessage.textContent =
+    `「${word}」新增成功！`;
+
+
+  // 清空輸入框
+
+  newWordInput.value = "";
+
+
+  // 重新載入單字列表
+
+  loadWords();
+
+});
+// ===============================
+// Enter 新增單字
+// ===============================
+
+newWordInput.addEventListener("keydown", event => {
+
+  if (event.key === "Enter") {
+
+    addWordBtn.click();
+
+  }
+
+});
 
 // ===============================
 // 搜尋
