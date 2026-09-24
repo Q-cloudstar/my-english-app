@@ -4,11 +4,10 @@
 
 const SUPABASE_URL = "https://vydgrdgpcrzsculxicww.supabase.co";
 const SUPABASE_KEY = "sb_publishable_tFYfMXuvOayfOkWK8dqfug_YEIvCg5l";
-
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
-)
+);
 
 
 // ===============================
@@ -38,28 +37,16 @@ const newWordInput = document.getElementById("newWordInput");
 const addWordBtn = document.getElementById("addWordBtn");
 const addWordMessage = document.getElementById("addWordMessage");
 
+
 // ===============================
 // 內部 Auth Email
-//
-// 使用者不需要知道這個 Email。
-// 它只是讓 Supabase Auth 可以繼續
-// 使用 email + password 的登入機制。
 // ===============================
 
 const INTERNAL_AUTH_DOMAIN = "my-english-app.invalid";
 
 
 // ===============================
-// 帳號名稱轉成內部識別
-//
-// 支援中文、英文、數字、底線、連字號。
-// 例如：
-// 小明
-// ↓
-// u_...
-// @my-english-app.invalid
-//
-// 使用者完全看不到這個內容。
+// 帳號名稱轉成內部 Email
 // ===============================
 
 function usernameToInternalEmail(username) {
@@ -92,15 +79,6 @@ function validateUsername(username) {
     return "帳號名稱最多 30 個字";
   }
 
-  // 允許：
-  // 中文
-  // 英文
-  // 數字
-  // 底線
-  // 連字號
-  //
-  // 不允許空白與特殊符號。
-
   const usernamePattern =
     /^[\u4e00-\u9fffA-Za-z0-9_-]+$/;
 
@@ -119,7 +97,6 @@ function validateUsername(username) {
 function showAuth() {
 
   authSection.classList.remove("hidden");
-
   appSection.classList.add("hidden");
 
   usernameInput.focus();
@@ -127,7 +104,7 @@ function showAuth() {
 
 
 // ===============================
-// 取得目前使用者的 profile
+// 取得目前使用者 Profile
 // ===============================
 
 async function getProfile(userId) {
@@ -156,11 +133,7 @@ async function getProfile(userId) {
 async function showApp(user) {
 
   authSection.classList.add("hidden");
-
   appSection.classList.remove("hidden");
-
-
-  // 取得真正的帳號名稱
 
   const profile = await getProfile(user.id);
 
@@ -176,10 +149,7 @@ async function showApp(user) {
 
   }
 
-
-  // 載入單字
-
-  loadWords();
+  await loadWords();
 }
 
 
@@ -195,9 +165,6 @@ signupBtn.addEventListener("click", async () => {
   const password =
     passwordInput.value;
 
-
-  // 檢查帳號
-
   const usernameError =
     validateUsername(username);
 
@@ -209,9 +176,6 @@ signupBtn.addEventListener("click", async () => {
     return;
   }
 
-
-  // 檢查密碼
-
   if (!password) {
 
     authMessage.textContent =
@@ -219,7 +183,6 @@ signupBtn.addEventListener("click", async () => {
 
     return;
   }
-
 
   if (password.length < 6) {
 
@@ -229,88 +192,78 @@ signupBtn.addEventListener("click", async () => {
     return;
   }
 
-
   authMessage.textContent =
     "正在建立帳號...";
 
+  signupBtn.disabled = true;
 
-  const internalEmail =
-    usernameToInternalEmail(username);
+  try {
 
+    const internalEmail =
+      usernameToInternalEmail(username);
 
-  // 建立 Supabase Auth 帳號
+    const {
+      data,
+      error
+    } = await supabaseClient.auth.signUp({
 
-  const {
-    data,
-    error
-  } = await supabaseClient.auth.signUp({
-
-    email: internalEmail,
-
-    password: password
-
-  });
-
-
-  if (error) {
-
-    console.error(error);
-
-    authMessage.textContent =
-      "建立帳號失敗：" + error.message;
-
-    return;
-  }
-
-
-  // 確認是否已取得登入 session
-
-  if (!data.session || !data.user) {
-
-    authMessage.textContent =
-      "帳號已建立，但目前無法自動登入。請確認 Supabase 沒有要求 Email 驗證。";
-
-    return;
-  }
-
-
-  // 建立 profiles 資料
-
-  const {
-    error: profileError
-  } = await supabaseClient
-    .from("profiles")
-    .insert({
-
-      id: data.user.id,
-
-      username: username
+      email: internalEmail,
+      password: password
 
     });
 
+    if (error) {
 
-  if (profileError) {
+      console.error(error);
 
-    console.error(profileError);
+      authMessage.textContent =
+        "建立帳號失敗：" + error.message;
+
+      return;
+    }
+
+    if (!data.session || !data.user) {
+
+      authMessage.textContent =
+        "帳號已建立，但目前無法自動登入。請確認 Supabase 沒有要求 Email 驗證。";
+
+      return;
+    }
+
+    const {
+      error: profileError
+    } = await supabaseClient
+      .from("profiles")
+      .insert({
+
+        id: data.user.id,
+        username: username
+
+      });
+
+    if (profileError) {
+
+      console.error(profileError);
+
+      authMessage.textContent =
+        "帳號建立成功，但建立使用者資料失敗：" +
+        profileError.message;
+
+      return;
+    }
 
     authMessage.textContent =
-      "帳號建立成功，但建立使用者資料失敗：" +
-      profileError.message;
+      "帳號建立成功！";
 
-    return;
+    passwordInput.value = "";
+
+    await showApp(data.user);
+
+  } finally {
+
+    signupBtn.disabled = false;
+
   }
-
-
-  authMessage.textContent =
-    "帳號建立成功！";
-
-
-  passwordInput.value = "";
-
-
-  // 進入 APP
-
-  await showApp(data.user);
 
 });
 
@@ -327,9 +280,6 @@ loginBtn.addEventListener("click", async () => {
   const password =
     passwordInput.value;
 
-
-  // 檢查帳號
-
   const usernameError =
     validateUsername(username);
 
@@ -341,7 +291,6 @@ loginBtn.addEventListener("click", async () => {
     return;
   }
 
-
   if (!password) {
 
     authMessage.textContent =
@@ -350,47 +299,47 @@ loginBtn.addEventListener("click", async () => {
     return;
   }
 
-
   authMessage.textContent =
     "登入中...";
 
+  loginBtn.disabled = true;
 
-  const internalEmail =
-    usernameToInternalEmail(username);
+  try {
 
+    const internalEmail =
+      usernameToInternalEmail(username);
 
-  // 使用內部識別登入 Supabase Auth
+    const {
+      data,
+      error
+    } = await supabaseClient.auth
+      .signInWithPassword({
 
-  const {
-    data,
-    error
-  } = await supabaseClient.auth
-    .signInWithPassword({
+        email: internalEmail,
+        password: password
 
-      email: internalEmail,
+      });
 
-      password: password
+    if (error) {
 
-    });
+      console.error(error);
 
+      authMessage.textContent =
+        "登入失敗：帳號名稱或密碼不正確";
 
-  if (error) {
+      return;
+    }
 
-    console.error(error);
+    authMessage.textContent = "";
+    passwordInput.value = "";
 
-    authMessage.textContent =
-      "登入失敗：帳號名稱或密碼不正確";
+    await showApp(data.user);
 
-    return;
+  } finally {
+
+    loginBtn.disabled = false;
+
   }
-
-
-  authMessage.textContent = "";
-
-  passwordInput.value = "";
-
-
-  await showApp(data.user);
 
 });
 
@@ -406,9 +355,7 @@ logoutBtn.addEventListener("click", async () => {
   showAuth();
 
   usernameInput.value = "";
-
   passwordInput.value = "";
-
   authMessage.textContent = "";
 
 });
@@ -425,7 +372,6 @@ async function checkUser() {
       session
     }
   } = await supabaseClient.auth.getSession();
-
 
   if (session) {
 
@@ -470,14 +416,12 @@ async function loadWords(searchText = "") {
   wordList.innerHTML =
     '<div class="loading">載入中...</div>';
 
-
   let query = supabaseClient
     .from("words")
     .select("*")
     .order("created_at", {
       ascending: false
     });
-
 
   if (searchText) {
 
@@ -488,12 +432,10 @@ async function loadWords(searchText = "") {
 
   }
 
-
   const {
     data,
     error
   } = await query;
-
 
   if (error) {
 
@@ -505,15 +447,11 @@ async function loadWords(searchText = "") {
     return;
   }
 
-
   displayWords(data);
 
 }
 
 
-// ===============================
-// 顯示單字
-// ===============================
 // ===============================
 // 顯示單字列表
 // ===============================
@@ -528,9 +466,7 @@ function displayWords(words) {
     return;
   }
 
-
   wordList.innerHTML = "";
-
 
   words.forEach(word => {
 
@@ -538,7 +474,6 @@ function displayWords(words) {
       document.createElement("div");
 
     div.className = "word-item";
-
 
     div.innerHTML = `
       <div class="word-row">
@@ -557,19 +492,13 @@ function displayWords(words) {
       </div>
     `;
 
-
     wordList.appendChild(div);
 
   });
 
 
-  // ===============================
-  // Learn Again 按鈕
-  // ===============================
-
   const learnAgainButtons =
     document.querySelectorAll(".learn-again-btn");
-
 
   learnAgainButtons.forEach(button => {
 
@@ -580,7 +509,6 @@ function displayWords(words) {
 
       const selectedWord =
         words.find(word => word.id === wordId);
-
 
       if (selectedWord) {
 
@@ -593,6 +521,8 @@ function displayWords(words) {
   });
 
 }
+
+
 // ===============================
 // 顯示單字詳細資料
 // ===============================
@@ -611,7 +541,19 @@ function showWordDetail(word) {
       </button>
 
       <div class="detail-word">
-        ${escapeHtml(word.word)}
+
+        <span>
+          ${escapeHtml(word.word)}
+        </span>
+
+        <button
+          id="speakWordBtn"
+          class="detail-audio-btn"
+          title="聽單字發音"
+        >
+          🔊
+        </button>
+
       </div>
 
       ${
@@ -637,8 +579,26 @@ function showWordDetail(word) {
       ${
         word.chinese_meaning
           ? `
-            <div class="detail-meaning">
-              ${escapeHtml(word.chinese_meaning)}
+            <div class="detail-section">
+
+              <h3>🇹🇼 中文意思</h3>
+
+              <div class="detail-text-with-audio">
+
+                <p>
+                  ${escapeHtml(word.chinese_meaning)}
+                </p>
+
+                <button
+                  class="detail-audio-btn"
+                  id="speakChineseMeaningBtn"
+                  title="聽中文"
+                >
+                  🔊
+                </button>
+
+              </div>
+
             </div>
           `
           : ""
@@ -648,10 +608,25 @@ function showWordDetail(word) {
         word.definition_en
           ? `
             <div class="detail-section">
-              <h3>English Definition</h3>
-              <p>
-                ${escapeHtml(word.definition_en)}
-              </p>
+
+              <h3>📖 English Definition</h3>
+
+              <div class="detail-text-with-audio">
+
+                <p>
+                  ${escapeHtml(word.definition_en)}
+                </p>
+
+                <button
+                  class="detail-audio-btn"
+                  id="speakDefinitionBtn"
+                  title="聽英文定義"
+                >
+                  🔊
+                </button>
+
+              </div>
+
             </div>
           `
           : ""
@@ -661,10 +636,25 @@ function showWordDetail(word) {
         word.example_en
           ? `
             <div class="detail-section">
-              <h3>Example</h3>
-              <p>
-                ${escapeHtml(word.example_en)}
-              </p>
+
+              <h3>💬 English Example</h3>
+
+              <div class="detail-text-with-audio">
+
+                <p>
+                  ${escapeHtml(word.example_en)}
+                </p>
+
+                <button
+                  class="detail-audio-btn"
+                  id="speakExampleBtn"
+                  title="聽英文例句"
+                >
+                  🔊
+                </button>
+
+              </div>
+
             </div>
           `
           : ""
@@ -674,20 +664,48 @@ function showWordDetail(word) {
         word.example_zh
           ? `
             <div class="detail-section">
-              <h3>中文例句</h3>
-              <p>
-                ${escapeHtml(word.example_zh)}
-              </p>
+
+              <h3>🇹🇼 中文例句</h3>
+
+              <div class="detail-text-with-audio">
+
+                <p>
+                  ${escapeHtml(word.example_zh)}
+                </p>
+
+                <button
+                  class="detail-audio-btn"
+                  id="speakExampleZhBtn"
+                  title="聽中文例句"
+                >
+                  🔊
+                </button>
+
+              </div>
+
             </div>
           `
           : ""
       }
 
+      ${
+        word.audio_url
+          ? `
+            <button
+              id="playNativeAudioBtn"
+              class="speak-btn"
+            >
+              🔊 聽真人發音
+            </button>
+          `
+          : ""
+      }
+
       <button
-        id="speakWordBtn"
+        id="playAllBtn"
         class="speak-btn"
       >
-        🔊 聽發音
+        ▶️ 全部播放
       </button>
 
     </div>
@@ -709,23 +727,168 @@ function showWordDetail(word) {
 
 
   // ===============================
-  // 發音
+  // 單字發音
   // ===============================
 
   document
     .getElementById("speakWordBtn")
     .addEventListener("click", () => {
 
-      speakWord(word.word);
+      if (word.audio_url) {
+
+        playNativeAudio(word.audio_url);
+
+      } else {
+
+        speakEnglish(word.word);
+
+      }
 
     });
 
+
+  // ===============================
+  // 中文意思發音
+  // ===============================
+
+  const chineseMeaningBtn =
+    document.getElementById(
+      "speakChineseMeaningBtn"
+    );
+
+  if (chineseMeaningBtn) {
+
+    chineseMeaningBtn.addEventListener(
+      "click",
+      () => {
+
+        speakChinese(word.chinese_meaning);
+
+      }
+    );
+
+  }
+
+
+  // ===============================
+  // 英文定義發音
+  // ===============================
+
+  const definitionBtn =
+    document.getElementById(
+      "speakDefinitionBtn"
+    );
+
+  if (definitionBtn) {
+
+    definitionBtn.addEventListener(
+      "click",
+      () => {
+
+        speakEnglish(word.definition_en);
+
+      }
+    );
+
+  }
+
+
+  // ===============================
+  // 英文例句發音
+  // ===============================
+
+  const exampleBtn =
+    document.getElementById(
+      "speakExampleBtn"
+    );
+
+  if (exampleBtn) {
+
+    exampleBtn.addEventListener(
+      "click",
+      () => {
+
+        speakEnglish(word.example_en);
+
+      }
+    );
+
+  }
+
+
+  // ===============================
+  // 中文例句發音
+  // ===============================
+
+  const exampleZhBtn =
+    document.getElementById(
+      "speakExampleZhBtn"
+    );
+
+  if (exampleZhBtn) {
+
+    exampleZhBtn.addEventListener(
+      "click",
+      () => {
+
+        speakChinese(word.example_zh);
+
+      }
+    );
+
+  }
+
+
+  // ===============================
+  // 真人發音
+  // ===============================
+
+  const nativeAudioBtn =
+    document.getElementById(
+      "playNativeAudioBtn"
+    );
+
+  if (nativeAudioBtn) {
+
+    nativeAudioBtn.addEventListener(
+      "click",
+      () => {
+
+        playNativeAudio(word.audio_url);
+
+      }
+    );
+
+  }
+
+
+  // ===============================
+  // 全部播放
+  // ===============================
+
+  document
+    .getElementById("playAllBtn")
+    .addEventListener(
+      "click",
+      async () => {
+
+        await playAllWordContent(word);
+
+      }
+    );
+
 }
+
+
 // ===============================
-// 單字發音
+// 英文語音
 // ===============================
 
-function speakWord(word) {
+function speakEnglish(text) {
+
+  if (!text) {
+    return;
+  }
 
   if (!("speechSynthesis" in window)) {
 
@@ -734,47 +897,358 @@ function speakWord(word) {
     return;
   }
 
-
   window.speechSynthesis.cancel();
 
-
   const speech =
-    new SpeechSynthesisUtterance(word);
-
+    new SpeechSynthesisUtterance(text);
 
   speech.lang = "en-US";
-
   speech.rate = 0.85;
-
   speech.pitch = 1;
-
 
   window.speechSynthesis.speak(speech);
 
 }
 
+
 // ===============================
-// 新增單字
+// 中文語音
 // ===============================
 
-addWordBtn.addEventListener("click", async () => {
+function speakChinese(text) {
 
-  const word =
-    newWordInput.value.trim();
+  if (!text) {
+    return;
+  }
 
+  if (!("speechSynthesis" in window)) {
 
-  // 檢查是否有輸入
-
-  if (!word) {
-
-    addWordMessage.textContent =
-      "請先輸入英文單字";
+    alert("你的瀏覽器不支援語音播放");
 
     return;
   }
 
+  window.speechSynthesis.cancel();
 
-  // 確認目前有登入
+  const speech =
+    new SpeechSynthesisUtterance(text);
+
+  speech.lang = "zh-TW";
+  speech.rate = 0.85;
+  speech.pitch = 1;
+
+  window.speechSynthesis.speak(speech);
+
+}
+
+
+// ===============================
+// 播放全部內容
+// ===============================
+
+async function playAllWordContent(word) {
+
+  window.speechSynthesis.cancel();
+
+
+  // 1. 單字
+  if (word.audio_url) {
+
+    await playNativeAudioAndWait(
+      word.audio_url
+    );
+
+  } else {
+
+    await speakEnglishAndWait(
+      word.word
+    );
+
+  }
+
+
+  // 2. 中文意思
+  if (word.chinese_meaning) {
+
+    await speakChineseAndWait(
+      word.chinese_meaning
+    );
+
+  }
+
+
+  // 3. 英文定義
+  if (word.definition_en) {
+
+    await speakEnglishAndWait(
+      word.definition_en
+    );
+
+  }
+
+
+  // 4. 英文例句
+  if (word.example_en) {
+
+    await speakEnglishAndWait(
+      word.example_en
+    );
+
+  }
+
+
+  // 5. 中文例句
+  if (word.example_zh) {
+
+    await speakChineseAndWait(
+      word.example_zh
+    );
+
+  }
+
+}
+
+
+// ===============================
+// 等待英文語音完成
+// ===============================
+
+function speakEnglishAndWait(text) {
+
+  return new Promise(resolve => {
+
+    if (!text) {
+
+      resolve();
+      return;
+
+    }
+
+    const speech =
+      new SpeechSynthesisUtterance(text);
+
+    speech.lang = "en-US";
+    speech.rate = 0.85;
+    speech.pitch = 1;
+
+    speech.onend = resolve;
+    speech.onerror = resolve;
+
+    window.speechSynthesis.speak(speech);
+
+  });
+
+}
+
+
+// ===============================
+// 等待中文語音完成
+// ===============================
+
+function speakChineseAndWait(text) {
+
+  return new Promise(resolve => {
+
+    if (!text) {
+
+      resolve();
+      return;
+
+    }
+
+    const speech =
+      new SpeechSynthesisUtterance(text);
+
+    speech.lang = "zh-TW";
+    speech.rate = 0.85;
+    speech.pitch = 1;
+
+    speech.onend = resolve;
+    speech.onerror = resolve;
+
+    window.speechSynthesis.speak(speech);
+
+  });
+
+}
+
+
+// ===============================
+// 等待真人發音完成
+// ===============================
+
+function playNativeAudioAndWait(audioUrl) {
+
+  return new Promise(resolve => {
+
+    if (!audioUrl) {
+
+      resolve();
+      return;
+
+    }
+
+    const audio =
+      new Audio(audioUrl);
+
+    audio.onended = resolve;
+    audio.onerror = resolve;
+
+    audio.play().catch(() => {
+
+      resolve();
+
+    });
+
+  });
+
+}
+
+
+// ===============================
+// 播放 Merriam-Webster 真人發音
+// ===============================
+
+function playNativeAudio(audioUrl) {
+
+  if (!audioUrl) {
+    return;
+  }
+
+  const audio =
+    new Audio(audioUrl);
+
+  audio.play().catch(error => {
+
+    console.error(
+      "真人發音播放失敗：",
+      error
+    );
+
+  });
+
+}
+
+
+// ===============================
+// 呼叫 lookup-word Edge Function
+// ===============================
+
+async function lookupWord(word) {
+
+  const {
+    data,
+    error
+  } = await supabaseClient.functions.invoke(
+    "lookup-word",
+    {
+      body: {
+        word: word
+      }
+    }
+  );
+
+  if (error) {
+
+    console.error(
+      "lookup-word 失敗：",
+      error
+    );
+
+    throw new Error(
+      "無法取得單字資料"
+    );
+
+  }
+
+  if (!data || data.error) {
+
+    throw new Error(
+      data?.error ||
+      "找不到這個單字或片語"
+    );
+
+  }
+
+  return data;
+
+}
+
+
+// ===============================
+// 呼叫 translate-word Edge Function
+// ===============================
+
+async function translateWord(
+  definitionEn,
+  exampleEn
+) {
+
+  const {
+    data,
+    error
+  } = await supabaseClient.functions.invoke(
+    "translate-word",
+    {
+      body: {
+
+        definition_en:
+          definitionEn || "",
+
+        example_en:
+          exampleEn || ""
+
+      }
+    }
+  );
+
+
+  if (error) {
+
+    console.error(
+      "translate-word 失敗：",
+      error
+    );
+
+    throw new Error(
+      "中文翻譯失敗"
+    );
+
+  }
+
+
+  if (!data || data.error) {
+
+    throw new Error(
+      data?.error ||
+      "中文翻譯失敗"
+    );
+
+  }
+
+
+  return data;
+
+}
+
+
+// ===============================
+// 新增單字／片語
+// ===============================
+
+async function addWord() {
+
+  const word =
+    newWordInput.value.trim();
+
+  if (!word) {
+
+    addWordMessage.textContent =
+      "請先輸入英文單字或片語";
+
+    return;
+  }
+
 
   const {
     data: {
@@ -792,80 +1266,167 @@ addWordBtn.addEventListener("click", async () => {
   }
 
 
-  addWordMessage.textContent =
-    "新增中...";
+  addWordBtn.disabled = true;
 
 
-  // 存入 Supabase words 表
+  try {
 
-  const {
-    error
-  } = await supabaseClient
-    .from("words")
-    .insert({
+    // ===============================
+    // 第一步：查 Merriam-Webster
+    // ===============================
 
-      word: word,
+    addWordMessage.textContent =
+      "🔎 正在查詢單字資料...";
 
-      user_id: user.id
-
-    });
+    const dictionaryData =
+      await lookupWord(word);
 
 
-  // 新增失敗
+    // ===============================
+    // 第二步：MyMemory 中文翻譯
+    // ===============================
 
-  if (error) {
+    addWordMessage.textContent =
+      "🌏 正在翻譯中文...";
+
+    const translationData =
+      await translateWord(
+        dictionaryData.definition_en || "",
+        dictionaryData.example_en || ""
+      );
+
+
+    // ===============================
+    // 第三步：儲存到 Supabase
+    // ===============================
+
+    addWordMessage.textContent =
+      "💾 正在儲存單字...";
+
+
+    const {
+      error
+    } = await supabaseClient
+      .from("words")
+      .insert({
+
+        word:
+          dictionaryData.word || word,
+
+        phonetic:
+          dictionaryData.phonetic || null,
+
+        part_of_speech:
+          dictionaryData.part_of_speech || null,
+
+        definition_en:
+          dictionaryData.definition_en || null,
+
+        example_en:
+          dictionaryData.example_en || null,
+
+        chinese_meaning:
+          translationData.chinese_meaning || null,
+
+        example_zh:
+          translationData.example_zh || null,
+
+        audio_url:
+          dictionaryData.audio || null,
+
+        user_id:
+          user.id
+
+      });
+
+
+    if (error) {
+
+      console.error(
+        "Supabase 儲存錯誤：",
+        error
+      );
+
+      throw new Error(
+        "儲存失敗：" + error.message
+      );
+
+    }
+
+
+    // ===============================
+    // 成功
+    // ===============================
+
+    addWordMessage.textContent =
+      `✅「${word}」新增成功！`;
+
+    newWordInput.value = "";
+
+    await loadWords();
+
+
+  } catch (error) {
 
     console.error(error);
 
     addWordMessage.textContent =
-      "新增失敗：" + error.message;
+      "❌ " + error.message;
 
-    return;
-  }
+  } finally {
 
-
-  // 新增成功
-
-  addWordMessage.textContent =
-    `「${word}」新增成功！`;
-
-
-  // 清空輸入框
-
-  newWordInput.value = "";
-
-
-  // 重新載入單字列表
-
-  loadWords();
-
-});
-// ===============================
-// Enter 新增單字
-// ===============================
-
-newWordInput.addEventListener("keydown", event => {
-
-  if (event.key === "Enter") {
-
-    addWordBtn.click();
+    addWordBtn.disabled = false;
 
   }
 
-});
+}
+
+
+// ===============================
+// 新增單字按鈕
+// ===============================
+
+addWordBtn.addEventListener(
+  "click",
+  addWord
+);
+
+
+// ===============================
+// Enter 新增單字／片語
+// ===============================
+
+newWordInput.addEventListener(
+  "keydown",
+  event => {
+
+    if (event.key === "Enter") {
+
+      event.preventDefault();
+
+      addWord();
+
+    }
+
+  }
+);
+
 
 // ===============================
 // 搜尋
 // ===============================
 
-searchBtn.addEventListener("click", () => {
+searchBtn.addEventListener(
+  "click",
+  () => {
 
-  const keyword =
-    searchInput.value.trim();
+    const keyword =
+      searchInput.value.trim();
 
-  loadWords(keyword);
+    loadWords(keyword);
 
-});
+  }
+);
 
 
 // ===============================
@@ -877,6 +1438,8 @@ searchInput.addEventListener(
   event => {
 
     if (event.key === "Enter") {
+
+      event.preventDefault();
 
       const keyword =
         searchInput.value.trim();
@@ -902,6 +1465,7 @@ function escapeHtml(text) {
     text ?? "";
 
   return div.innerHTML;
+
 }
 
 
