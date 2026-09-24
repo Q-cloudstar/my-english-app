@@ -3,18 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>我的英文 APP</title>
-
+  <title>我的英文小學堂</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
   <!-- =========================
-       登入 / 註冊
+       登入 / 建立帳號
        ========================= -->
-
   <div id="authSection" class="container">
 
     <div class="auth-card">
@@ -23,15 +20,10 @@
 
       <h1>我的英文小學堂</h1>
 
-      <p class="subtitle">
-        歡迎回來！
-      </p>
+      <p class="subtitle">歡迎回來！</p>
 
       <div class="form-group">
-
-        <label for="username">
-          👤 帳號名稱
-        </label>
+        <label for="username">👤 帳號名稱</label>
 
         <input
           type="text"
@@ -40,14 +32,10 @@
           autocomplete="username"
           maxlength="30"
         >
-
       </div>
 
       <div class="form-group">
-
-        <label for="password">
-          🔒 密碼
-        </label>
+        <label for="password">🔒 密碼</label>
 
         <input
           type="password"
@@ -55,7 +43,6 @@
           placeholder="請輸入密碼"
           autocomplete="current-password"
         >
-
       </div>
 
       <button id="loginBtn" class="primary-btn">
@@ -78,15 +65,13 @@
 
 
   <!-- =========================
-       APP 主畫面
+       主程式
        ========================= -->
-
   <div id="appSection" class="container hidden">
 
     <header class="app-header">
 
       <div>
-
         <div class="app-title">
           📚 我的英文小學堂
         </div>
@@ -94,7 +79,6 @@
         <p id="userName">
           歡迎！
         </p>
-
       </div>
 
       <button id="logoutBtn" class="logout-btn">
@@ -103,48 +87,52 @@
 
     </header>
 
-<!-- =========================
-     新增單字
-     ========================= -->
 
-<section class="card">
-
-  <div class="section-title">
-    <div>
-      <span class="section-icon">➕</span>
-      <span>新增單字</span>
-    </div>
-  </div>
-
-  <div class="add-word-area">
-
-    <input
-      type="text"
-      id="newWordInput"
-      placeholder="輸入英文單字，例如 apple"
-      autocomplete="off"
-    >
-
-    <button id="addWordBtn" class="add-word-btn">
-      ➕ 新增單字
-    </button>
-
-  </div>
-
-  <p id="addWordMessage" class="add-word-message"></p>
-
-</section>
-    <!-- 我的單字 -->
-
+    <!-- =========================
+         新增單字
+         ========================= -->
     <section class="card">
 
       <div class="section-title">
+        <div>
+          <span class="section-icon">➕</span>
+          <span>新增單字</span>
+        </div>
+      </div>
 
+      <div class="add-word-area">
+
+        <input
+          type="text"
+          id="newWordInput"
+          placeholder="輸入英文單字或片語，例如 apple / look after"
+          autocomplete="off"
+        >
+
+        <button
+          id="addWordBtn"
+          class="add-word-btn"
+        >
+          ➕ 新增單字
+        </button>
+
+      </div>
+
+      <p id="addWordMessage" class="add-word-message"></p>
+
+    </section>
+
+
+    <!-- =========================
+         單字列表
+         ========================= -->
+    <section class="card">
+
+      <div class="section-title">
         <div>
           <span class="section-icon">🔍</span>
           <span>我的單字</span>
         </div>
-
       </div>
 
       <div class="search-area">
@@ -156,18 +144,19 @@
           autocomplete="off"
         >
 
-        <button id="searchBtn" class="search-btn">
+        <button
+          id="searchBtn"
+          class="search-btn"
+        >
           搜尋
         </button>
 
       </div>
 
       <div id="wordList">
-
         <div class="loading">
           載入中...
         </div>
-
       </div>
 
     </section>
@@ -176,11 +165,9 @@
 
 
   <!-- Supabase -->
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- 我的程式 -->
-
+  <!-- 我們自己的程式 -->
   <script src="app.js"></script>
 
 </body>
