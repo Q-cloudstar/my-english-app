@@ -1,173 +1,223 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>我的英文小學堂</title>
+
+  <title>我的英文學習小書櫃</title>
+
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-  <!-- =========================
-       登入 / 建立帳號
-       ========================= -->
-  <div id="authSection" class="container">
+  <main class="container">
 
-    <div class="auth-card">
+    <!-- =========================
+         登入區
+    ========================== -->
+    <section id="authSection" class="card">
 
-      <div class="app-logo">📚</div>
+      <div class="logo">📚</div>
 
-      <h1>我的英文小學堂</h1>
+      <h1>我的英文學習小書櫃</h1>
 
-      <p class="subtitle">歡迎回來！</p>
+      <p class="subtitle">
+        學單字、聽發音、慢慢累積自己的英文小書櫃
+      </p>
 
       <div class="form-group">
-        <label for="username">👤 帳號名稱</label>
-
+        <label for="username">帳號名稱</label>
         <input
-          type="text"
           id="username"
-          placeholder="請輸入帳號名稱"
+          type="text"
           autocomplete="username"
-          maxlength="30"
+          placeholder="輸入帳號名稱"
         >
       </div>
 
       <div class="form-group">
-        <label for="password">🔒 密碼</label>
-
+        <label for="password">密碼</label>
         <input
-          type="password"
           id="password"
-          placeholder="請輸入密碼"
+          type="password"
           autocomplete="current-password"
+          placeholder="輸入密碼"
         >
       </div>
 
-      <button id="loginBtn" class="primary-btn">
-        🚀 登入
-      </button>
+      <div class="button-row">
+        <button id="loginBtn" class="primary-btn">
+          登入
+        </button>
 
-      <button id="signupBtn" class="secondary-btn">
-        ✨ 建立新帳號
-      </button>
+        <button id="signupBtn" class="secondary-btn">
+          註冊
+        </button>
+      </div>
 
       <p id="authMessage" class="message"></p>
 
-      <p class="account-hint">
-        帳號名稱可使用中文、英文、數字、底線或連字號
-      </p>
-
-    </div>
-
-  </div>
+    </section>
 
 
-  <!-- =========================
-       主程式
-       ========================= -->
-  <div id="appSection" class="container hidden">
+    <!-- =========================
+         App 主畫面
+    ========================== -->
+    <section id="appSection" class="hidden">
 
-    <header class="app-header">
+      <header class="app-header">
 
-      <div>
-        <div class="app-title">
-          📚 我的英文小學堂
+        <div>
+          <h1>📚 我的英文小書櫃</h1>
+          <p>
+            歡迎你，<span id="userName"></span>！
+          </p>
         </div>
 
-        <p id="userName">
-          歡迎！
+        <button id="logoutBtn" class="logout-btn">
+          登出
+        </button>
+
+      </header>
+
+
+      <!-- =========================
+           新增單字
+      ========================== -->
+      <section class="card">
+
+        <h2>➕ 新增單字</h2>
+
+        <div class="add-word-row">
+
+          <input
+            id="newWordInput"
+            type="text"
+            placeholder="輸入英文單字或片語，例如 apple、look after"
+            autocomplete="off"
+          >
+
+          <button id="addWordBtn" class="primary-btn">
+            加入
+          </button>
+
+        </div>
+
+        <p id="addWordMessage" class="message"></p>
+
+      </section>
+
+
+      <!-- =========================
+           搜尋自己的字庫
+      ========================== -->
+      <section class="card">
+
+        <h2>🔎 我的單字</h2>
+
+        <div class="search-row">
+
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="搜尋我的單字"
+            autocomplete="off"
+          >
+
+          <button id="searchBtn" class="secondary-btn">
+            搜尋
+          </button>
+
+        </div>
+
+        <div id="wordList" class="word-list"></div>
+
+      </section>
+
+
+      <!-- =========================
+           單字詳細資料
+      ========================== -->
+      <section
+        id="wordDetail"
+        class="card word-detail hidden"
+      ></section>
+
+
+      <!-- =========================
+           資料來源
+      ========================== -->
+      <section id="dataSourceSection" class="card data-source">
+
+        <h2>📚 資料來源與授權</h2>
+
+        <p>
+          本 App 的英文單字、繁體中文詞義、詞性及部分例句資料，
+          主要來自：
         </p>
-      </div>
 
-      <button id="logoutBtn" class="logout-btn">
-        登出
-      </button>
+        <p>
+          <strong>完整 TOEIC 單字庫（English–Traditional Chinese）</strong>
+        </p>
 
-    </header>
+        <p>
+          作者：<code>kknono668</code>
+        </p>
 
+        <p>
+          資料來源：
+          <a
+            href="https://huggingface.co/datasets/kknono668/toeic-vocab-tw"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Hugging Face
+          </a>
+        </p>
 
-    <!-- =========================
-         新增單字
-         ========================= -->
-    <section class="card">
+        <p>
+          本資料集採用
+          <strong>
+            Creative Commons Attribution-ShareAlike 4.0 International
+            （CC BY-SA 4.0）
+          </strong>
+          授權。
+        </p>
 
-      <div class="section-title">
-        <div>
-          <span class="section-icon">➕</span>
-          <span>新增單字</span>
-        </div>
-      </div>
+        <p>
+          <a
+            href="https://creativecommons.org/licenses/by-sa/4.0/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            查看 CC BY-SA 4.0 授權
+          </a>
+        </p>
 
-      <div class="add-word-area">
+        <p>
+          本 App 使用上述資料時，依 CC BY-SA 4.0
+          授權條款標示資料來源。
+          資料集中的內容由原作者整理與提供，
+          本 App 並非該資料集的原作者或官方網站。
+        </p>
 
-        <input
-          type="text"
-          id="newWordInput"
-          placeholder="輸入英文單字或片語，例如 apple / look after"
-          autocomplete="off"
-        >
+        <p>
+          本 App 的發音功能使用 Merriam-Webster
+          或瀏覽器語音功能，相關內容依各服務提供者的授權與使用條款辦理。
+        </p>
 
-        <button
-          id="addWordBtn"
-          class="add-word-btn"
-        >
-          ➕ 新增單字
-        </button>
-
-      </div>
-
-      <p id="addWordMessage" class="add-word-message"></p>
-
-    </section>
-
-
-    <!-- =========================
-         單字列表
-         ========================= -->
-    <section class="card">
-
-      <div class="section-title">
-        <div>
-          <span class="section-icon">🔍</span>
-          <span>我的單字</span>
-        </div>
-      </div>
-
-      <div class="search-area">
-
-        <input
-          type="text"
-          id="searchInput"
-          placeholder="搜尋單字..."
-          autocomplete="off"
-        >
-
-        <button
-          id="searchBtn"
-          class="search-btn"
-        >
-          搜尋
-        </button>
-
-      </div>
-
-      <div id="wordList">
-        <div class="loading">
-          載入中...
-        </div>
-      </div>
+      </section>
 
     </section>
 
-  </div>
+  </main>
 
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- 我們自己的程式 -->
+  <!-- App -->
   <script src="app.js"></script>
 
 </body>
