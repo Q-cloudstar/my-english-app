@@ -1387,9 +1387,7 @@ function renderWordDetail(word) {
           word.part_of_speech
             ? `
               <div class="detail-pos">
-                ${escapeHtml(
-                  word.part_of_speech
-                )}
+                ${escapeHtml(word.part_of_speech)}
               </div>
             `
             : ""
@@ -1492,71 +1490,78 @@ function renderWordDetail(word) {
     }
 
 
-    ${
-      word.example_en
-        ? `
-          <div class="detail-block">
+    <div class="detail-block notes-block">
 
-            <div class="detail-label">
-              English Example
-            </div>
+      <div class="detail-label">
+        📝 我的英文筆記
+      </div>
 
-            <div class="detail-text">
+      <textarea
+        id="englishNotesInput"
+        class="notes-input"
+        placeholder="可以輸入自己的英文例句、單字用法或學習筆記..."
+      >${escapeHtml(word.notes || "")}</textarea>
 
-              ${escapeHtml(
-                word.example_en
-              )}
+      <div class="notes-actions">
 
-              <button
-                id="exampleEnAudioBtn"
-                class="audio-btn"
-                title="播放英文例句"
-              >
-                🔊
-              </button>
+        <button
+          id="englishNotesAudioBtn"
+          class="audio-btn"
+          type="button"
+        >
+          🔊 聽英文
+        </button>
 
-            </div>
+      </div>
 
-          </div>
-        `
-        : ""
-    }
+    </div>
 
 
-    ${
-      word.example_zh
-        ? `
-          <div class="detail-block">
+    <div class="detail-block notes-block">
 
-            <div class="detail-label">
-              中文例句
-            </div>
+      <div class="detail-label">
+        📝 我的繁體中文筆記
+      </div>
 
-            <div class="detail-text">
+      <textarea
+        id="chineseNotesInput"
+        class="notes-input"
+        placeholder="可以輸入中文解釋、聯想、學習心得..."
+      ></textarea>
 
-              ${escapeHtml(
-                word.example_zh
-              )}
+      <div class="notes-actions">
 
-              <button
-                id="exampleZhAudioBtn"
-                class="audio-btn"
-                title="播放中文例句"
-              >
-                🔊
-              </button>
+        <button
+          id="chineseNotesAudioBtn"
+          class="audio-btn"
+          type="button"
+        >
+          🔊 聽中文
+        </button>
 
-            </div>
+      </div>
 
-          </div>
-        `
-        : ""
-    }
+    </div>
+
+
+    <button
+      id="saveNotesBtn"
+      class="play-all-btn"
+      type="button"
+    >
+      💾 儲存我的筆記
+    </button>
+
+    <div
+      id="notesMessage"
+      class="notes-message"
+    ></div>
 
 
     <button
       id="playAllBtn"
       class="play-all-btn"
+      type="button"
     >
       ▶️ 播放全部
     </button>
@@ -1566,15 +1571,66 @@ function renderWordDetail(word) {
     <button
       id="deleteWordBtn"
       class="delete-btn"
+      type="button"
     >
       🗑 刪除這個單字
     </button>
+
   `;
 
 
-  /* =========================
-     返回
-  ========================== */
+  const englishNotesInput =
+    document.getElementById(
+      "englishNotesInput"
+    );
+
+  const chineseNotesInput =
+    document.getElementById(
+      "chineseNotesInput"
+    );
+
+  const saveNotesBtn =
+    document.getElementById(
+      "saveNotesBtn"
+    );
+
+  const notesMessage =
+    document.getElementById(
+      "notesMessage"
+    );
+
+
+  const existingNotes =
+    word.notes || "";
+
+  const noteSeparator =
+    "\n\n--- 中文筆記 ---\n\n";
+
+  if (existingNotes.includes(noteSeparator)) {
+
+    const parts =
+      existingNotes.split(
+        noteSeparator
+      );
+
+    englishNotesInput.value =
+      parts[0] || "";
+
+    chineseNotesInput.value =
+      parts.slice(1).join(
+        noteSeparator
+      ) || "";
+
+  } else {
+
+    englishNotesInput.value =
+      existingNotes;
+
+    chineseNotesInput.value =
+      "";
+
+  }
+
 
   document
     .getElementById("backToWordsBtn")
@@ -1591,13 +1647,10 @@ function renderWordDetail(word) {
         wordList.parentElement.classList.remove(
           "hidden"
         );
+
       }
     );
 
-
-  /* =========================
-     單字發音
-  ========================== */
 
   const wordAudioBtn =
     document.getElementById(
@@ -1611,14 +1664,12 @@ function renderWordDetail(word) {
       () => {
 
         playWord(word);
+
       }
     );
+
   }
 
-
-  /* =========================
-     中文詞義
-  ========================== */
 
   const meaningAudioBtn =
     document.getElementById(
@@ -1634,14 +1685,12 @@ function renderWordDetail(word) {
         playChinese(
           word.chinese_meaning
         );
+
       }
     );
+
   }
 
-
-  /* =========================
-     英文定義
-  ========================== */
 
   const definitionAudioBtn =
     document.getElementById(
@@ -1657,60 +1706,179 @@ function renderWordDetail(word) {
         playEnglish(
           word.definition_en
         );
+
       }
     );
+
   }
 
 
-  /* =========================
-     英文例句
-  ========================== */
-
-  const exampleEnAudioBtn =
+  const englishNotesAudioBtn =
     document.getElementById(
-      "exampleEnAudioBtn"
+      "englishNotesAudioBtn"
     );
 
-  if (exampleEnAudioBtn) {
+  englishNotesAudioBtn.addEventListener(
+    "click",
+    () => {
 
-    exampleEnAudioBtn.addEventListener(
-      "click",
-      () => {
+      const text =
+        englishNotesInput.value.trim();
 
-        playEnglish(
-          word.example_en
-        );
+      if (!text) {
+        return;
       }
-    );
-  }
+
+      playEnglish(text);
+
+    }
+  );
 
 
-  /* =========================
-     中文例句
-  ========================== */
-
-  const exampleZhAudioBtn =
+  const chineseNotesAudioBtn =
     document.getElementById(
-      "exampleZhAudioBtn"
+      "chineseNotesAudioBtn"
     );
 
-  if (exampleZhAudioBtn) {
+  chineseNotesAudioBtn.addEventListener(
+    "click",
+    () => {
 
-    exampleZhAudioBtn.addEventListener(
-      "click",
-      () => {
+      const text =
+        chineseNotesInput.value.trim();
 
-        playChinese(
-          word.example_zh
-        );
+      if (!text) {
+        return;
       }
-    );
-  }
+
+      playChinese(text);
+
+    }
+  );
 
 
-  /* =========================
-     播放全部
-  ========================== */
+  saveNotesBtn.addEventListener(
+    "click",
+    async () => {
+
+      stopAllAudio();
+
+      const englishNotes =
+        englishNotesInput.value.trim();
+
+      const chineseNotes =
+        chineseNotesInput.value.trim();
+
+      let notes = "";
+
+      if (englishNotes) {
+
+        notes =
+          englishNotes;
+
+      }
+
+      if (chineseNotes) {
+
+        if (notes) {
+
+          notes +=
+            noteSeparator;
+
+        }
+
+        notes +=
+          chineseNotes;
+
+      }
+
+      saveNotesBtn.disabled =
+        true;
+
+      setMessage(
+        notesMessage,
+        "儲存中..."
+      );
+
+      try {
+
+        const {
+          data: {
+            user
+          }
+        } =
+          await supabaseClient.auth.getUser();
+
+        if (!user) {
+
+          setMessage(
+            notesMessage,
+            "請先登入。",
+            "error"
+          );
+
+          return;
+        }
+
+
+        const {
+          error
+        } =
+          await supabaseClient
+            .from("words")
+            .update({
+              notes: notes
+            })
+            .eq("id", word.id)
+            .eq("user_id", user.id);
+
+
+        if (error) {
+
+          console.error(
+            "儲存筆記失敗：",
+            error
+          );
+
+          setMessage(
+            notesMessage,
+            "儲存失敗，請稍後再試。",
+            "error"
+          );
+
+          return;
+        }
+
+
+        word.notes =
+          notes;
+
+        setMessage(
+          notesMessage,
+          "筆記已儲存！",
+          "success"
+        );
+
+      } catch (error) {
+
+        console.error(error);
+
+        setMessage(
+          notesMessage,
+          "儲存失敗，請稍後再試。",
+          "error"
+        );
+
+      } finally {
+
+        saveNotesBtn.disabled =
+          false;
+
+      }
+
+    }
+  );
+
 
   const playAllBtn =
     document.getElementById(
@@ -1721,14 +1889,17 @@ function renderWordDetail(word) {
     "click",
     () => {
 
-      playAll(word);
+      const updatedWord = {
+        ...word,
+        notes:
+          englishNotesInput.value.trim()
+      };
+
+      playAll(updatedWord);
+
     }
   );
 
-
-  /* =========================
-     刪除
-  ========================== */
 
   const deleteWordBtn =
     document.getElementById(
@@ -1756,7 +1927,8 @@ function renderWordDetail(word) {
         await supabaseClient
           .from("words")
           .delete()
-          .eq("id", word.id);
+          .eq("id", word.id)
+          .eq("user_id", word.user_id);
 
       if (error) {
 
@@ -1778,13 +1950,8 @@ function renderWordDetail(word) {
       );
 
       await loadWords();
+
     }
   );
+
 }
-
-
-/* =========================================================
-   初始化
-========================================================= */
-
-checkUser();
