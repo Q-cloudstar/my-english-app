@@ -588,5 +588,103 @@ input:focus {
     font-size: 16px;
 
   }
+  /* =========================================================
+   資料來源與授權說明－固定頁尾
+========================================================= */
+
+.source-license {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  z-index: 9999;
+  box-sizing: border-box;
+
+  margin: 0;
+  padding: 0;
+
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid #e5e5e5;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+
+  font-size: 12px;
+  color: #777;
+}
+
+/* 平常只顯示這一行 */
+.source-license summary {
+  height: 32px;
+  padding: 0 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-sizing: border-box;
+
+  cursor: pointer;
+  user-select: none;
+
+  list-style: none;
+  white-space: nowrap;
+}
+
+/* 移除 Chrome / Safari 預設箭頭 */
+.source-license summary::-webkit-details-marker {
+  display: none;
+}
+
+/* 自訂展開箭頭 */
+.source-license summary::after {
+  content: " ▸";
+  font-size: 11px;
+  margin-left: 3px;
+}
+
+.source-license[open] summary::after {
+  content: " ▾";
+}
+
+/* 展開後的內容 */
+.source-license-content {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 8px 16px 10px;
+
+  box-sizing: border-box;
+
+  text-align: center;
+  line-height: 1.6;
+  background: #fafafa;
+}
+
+.source-license-content p {
+  margin: 3px 0;
+}
+
+/* 手機 */
+@media (max-width: 767px) {
+
+  .source-license summary {
+    height: 30px;
+    font-size: 11px;
+  }
+
+  .source-license-content {
+    padding: 7px 12px 9px;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+}
+
+/* 避免頁尾蓋住最下面的內容 */
+body {
+  padding-bottom: 34px;
+}
+
+/* 展開時增加一點底部空間 */
+body:has(.source-license[open]) {
+  padding-bottom: 150px;
+}
 
 }
