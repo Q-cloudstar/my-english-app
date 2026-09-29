@@ -15,36 +15,61 @@ const supabaseClient = supabase.createClient(
    DOM
 ========================================================= */
 
-const authSection = document.getElementById("authSection");
-const appSection = document.getElementById("appSection");
+const authSection =
+  document.getElementById("authSection");
 
-const usernameInput = document.getElementById("username");
-const passwordInput = document.getElementById("password");
+const appSection =
+  document.getElementById("appSection");
 
-const loginBtn = document.getElementById("loginBtn");
-const signupBtn = document.getElementById("signupBtn");
-const logoutBtn = document.getElementById("logoutBtn");
+const usernameInput =
+  document.getElementById("username");
 
-const authMessage = document.getElementById("authMessage");
+const passwordInput =
+  document.getElementById("password");
 
-const userName = document.getElementById("userName");
+const loginBtn =
+  document.getElementById("loginBtn");
 
-const newWordInput = document.getElementById("newWordInput");
-const addWordBtn = document.getElementById("addWordBtn");
-const addWordMessage = document.getElementById("addWordMessage");
+const signupBtn =
+  document.getElementById("signupBtn");
 
-const searchInput = document.getElementById("searchInput");
-const searchBtn = document.getElementById("searchBtn");
+const logoutBtn =
+  document.getElementById("logoutBtn");
 
-const wordList = document.getElementById("wordList");
-const wordDetail = document.getElementById("wordDetail");
+const authMessage =
+  document.getElementById("authMessage");
+
+const userName =
+  document.getElementById("userName");
+
+const newWordInput =
+  document.getElementById("newWordInput");
+
+const addWordBtn =
+  document.getElementById("addWordBtn");
+
+const addWordMessage =
+  document.getElementById("addWordMessage");
+
+const searchInput =
+  document.getElementById("searchInput");
+
+const searchBtn =
+  document.getElementById("searchBtn");
+
+const wordList =
+  document.getElementById("wordList");
+
+const wordDetail =
+  document.getElementById("wordDetail");
 
 
 /* =========================================================
    常數
 ========================================================= */
 
-const INTERNAL_AUTH_DOMAIN = "my-english-app.invalid";
+const INTERNAL_AUTH_DOMAIN =
+  "my-english-app.invalid";
 
 const noteSeparator =
   "\n\n--- 中文筆記 ---\n\n";
@@ -88,7 +113,10 @@ function isValidUsername(username) {
 
 function escapeHtml(value) {
 
-  if (value === null || value === undefined) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
     return "";
   }
 
@@ -109,17 +137,23 @@ function escapeHtml(value) {
 function showAuth() {
 
   if (authSection) {
+
     authSection.classList.remove("hidden");
     authSection.style.display = "";
+
   }
 
   if (appSection) {
+
     appSection.classList.add("hidden");
     appSection.style.display = "";
+
   }
 
   if (wordDetail) {
+
     wordDetail.classList.add("hidden");
+
   }
 
 }
@@ -132,17 +166,23 @@ function showAuth() {
 async function showApp() {
 
   if (authSection) {
+
     authSection.classList.add("hidden");
     authSection.style.display = "";
+
   }
 
   if (appSection) {
+
     appSection.classList.remove("hidden");
     appSection.style.display = "";
+
   }
 
   if (wordDetail) {
+
     wordDetail.classList.add("hidden");
+
   }
 
   await loadWords();
@@ -154,11 +194,15 @@ async function showApp() {
    顯示登入訊息
 ========================================================= */
 
-function showAuthMessage(message, isError = true) {
+function showAuthMessage(
+  message,
+  isError = true
+) {
 
   if (!authMessage) return;
 
-  authMessage.textContent = message;
+  authMessage.textContent =
+    message;
 
   authMessage.style.color =
     isError ? "#d9534f" : "";
@@ -170,11 +214,15 @@ function showAuthMessage(message, isError = true) {
    顯示新增單字訊息
 ========================================================= */
 
-function showAddWordMessage(message, isError = false) {
+function showAddWordMessage(
+  message,
+  isError = false
+) {
 
   if (!addWordMessage) return;
 
-  addWordMessage.textContent = message;
+  addWordMessage.textContent =
+    message;
 
   addWordMessage.style.color =
     isError ? "#d9534f" : "";
@@ -205,6 +253,7 @@ async function getProfile(userId) {
     );
 
     return null;
+
   }
 
   return data;
@@ -219,8 +268,10 @@ async function getProfile(userId) {
 async function showCurrentUser(user) {
 
   if (!user) {
+
     showAuth();
     return;
+
   }
 
   const profile =
@@ -261,6 +312,7 @@ async function signup() {
     );
 
     return;
+
   }
 
   if (!isValidUsername(username)) {
@@ -270,6 +322,7 @@ async function signup() {
     );
 
     return;
+
   }
 
   if (password.length < 6) {
@@ -279,10 +332,13 @@ async function signup() {
     );
 
     return;
+
   }
 
   if (signupBtn) {
+
     signupBtn.disabled = true;
+
   }
 
   try {
@@ -293,15 +349,16 @@ async function signup() {
     const {
       data,
       error
-    } = await supabaseClient.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username
+    } =
+      await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username
+          }
         }
-      }
-    });
+      });
 
     if (error) {
 
@@ -316,6 +373,7 @@ async function signup() {
       );
 
       return;
+
     }
 
     if (!data?.user) {
@@ -325,24 +383,24 @@ async function signup() {
       );
 
       return;
-    }
 
-    /*
-      建立 profile
-    */
+    }
 
     const {
       error: profileError
-    } = await supabaseClient
-      .from("profiles")
-      .insert({
-        id: data.user.id,
-        username
-      });
+    } =
+      await supabaseClient
+        .from("profiles")
+        .insert({
+          id: data.user.id,
+          username
+        });
 
     if (
       profileError &&
-      !profileError.message?.includes("duplicate")
+      !profileError.message?.includes(
+        "duplicate"
+      )
     ) {
 
       console.error(
@@ -355,6 +413,7 @@ async function signup() {
       );
 
       return;
+
     }
 
     showAuthMessage(
@@ -362,7 +421,9 @@ async function signup() {
       false
     );
 
-    await showCurrentUser(data.user);
+    await showCurrentUser(
+      data.user
+    );
 
   } catch (error) {
 
@@ -378,7 +439,9 @@ async function signup() {
   } finally {
 
     if (signupBtn) {
+
       signupBtn.disabled = false;
+
     }
 
   }
@@ -407,10 +470,13 @@ async function login() {
     );
 
     return;
+
   }
 
   if (loginBtn) {
+
     loginBtn.disabled = true;
+
   }
 
   try {
@@ -421,11 +487,12 @@ async function login() {
     const {
       data,
       error
-    } = await supabaseClient.auth
-      .signInWithPassword({
-        email,
-        password
-      });
+    } =
+      await supabaseClient.auth
+        .signInWithPassword({
+          email,
+          password
+        });
 
     if (error) {
 
@@ -439,6 +506,7 @@ async function login() {
       );
 
       return;
+
     }
 
     if (!data?.user) {
@@ -448,6 +516,7 @@ async function login() {
       );
 
       return;
+
     }
 
     await showCurrentUser(
@@ -468,7 +537,9 @@ async function login() {
   } finally {
 
     if (loginBtn) {
+
       loginBtn.disabled = false;
+
     }
 
   }
@@ -486,7 +557,8 @@ async function logout() {
 
   const {
     error
-  } = await supabaseClient.auth.signOut();
+  } =
+    await supabaseClient.auth.signOut();
 
   if (error) {
 
@@ -496,14 +568,19 @@ async function logout() {
     );
 
     return;
+
   }
 
   if (usernameInput) {
+
     usernameInput.value = "";
+
   }
 
   if (passwordInput) {
+
     passwordInput.value = "";
+
   }
 
   showAuth();
@@ -521,35 +598,39 @@ async function loadWords() {
     data: {
       user
     }
-  } = await supabaseClient.auth.getUser();
+  } =
+    await supabaseClient.auth.getUser();
 
   if (!user) {
+
     showAuth();
     return;
+
   }
 
   const {
     data,
     error
-  } = await supabaseClient
-    .from("words")
-    .select(`
-      id,
-      word,
-      phonetic,
-      part_of_speech,
-      chinese_meaning,
-      definition_en,
-      example_en,
-      example_zh,
-      notes,
-      audio_url,
-      created_at
-    `)
-    .eq("user_id", user.id)
-    .order("created_at", {
-      ascending: false
-    });
+  } =
+    await supabaseClient
+      .from("words")
+      .select(`
+        id,
+        word,
+        phonetic,
+        part_of_speech,
+        chinese_meaning,
+        definition_en,
+        example_en,
+        example_zh,
+        notes,
+        audio_url,
+        created_at
+      `)
+      .eq("user_id", user.id)
+      .order("created_at", {
+        ascending: false
+      });
 
   if (error) {
 
@@ -569,21 +650,26 @@ async function loadWords() {
     }
 
     return;
+
   }
 
   displayWords(data || []);
 
 }
 
+
+/* =========================================================
+   顯示單字列表
+========================================================= */
+
 function displayWords(words) {
 
   if (!wordList) return;
 
-  /* =====================================================
-     沒有單字
-  ===================================================== */
-
-  if (!words || words.length === 0) {
+  if (
+    !words ||
+    words.length === 0
+  ) {
 
     wordList.innerHTML = `
       <p class="message">
@@ -592,115 +678,93 @@ function displayWords(words) {
     `;
 
     return;
+
   }
 
 
-  /* =====================================================
-     顯示單字列表
-     
-     固定格式：
-     英文單字 + 音標 + 🔊 + 🔄 再學一次
-     
-     中文翻譯不在列表顯示。
-  ===================================================== */
+  wordList.innerHTML =
+    words.map(word => {
 
-  wordList.innerHTML = words.map(word => {
-
-    return `
-      <div
-        class="word-item"
-        data-word-id="${escapeHtml(word.id)}"
-        style="
-          display:flex;
-          align-items:center;
-          gap:10px;
-          padding:14px 16px;
-          margin:8px 0;
-          border:1px solid #e5e5e5;
-          border-radius:10px;
-          background:#fff;
-          box-sizing:border-box;
-        "
-      >
-
-        <!-- =========================================
-             英文單字 + 音標
-        ========================================== -->
-
+      return `
         <div
-          class="word-main"
+          class="word-item"
           data-word-id="${escapeHtml(word.id)}"
           style="
-            flex:1;
-            min-width:0;
-            cursor:pointer;
+            display:flex;
+            align-items:center;
+            gap:10px;
+            padding:14px 16px;
+            margin:8px 0;
+            border:1px solid #e5e5e5;
+            border-radius:10px;
+            background:#fff;
+            box-sizing:border-box;
           "
         >
 
-          <strong
+          <div
+            class="word-main"
+            data-word-id="${escapeHtml(word.id)}"
             style="
-              font-size:18px;
+              flex:1;
+              min-width:0;
+              cursor:pointer;
             "
           >
-            ${escapeHtml(word.word)}
-          </strong>
 
-          ${
-            word.phonetic
-              ? `
-                <span
-                  style="
-                    margin-left:8px;
-                    color:#777;
-                    font-size:14px;
-                  "
-                >
-                  ${escapeHtml(word.phonetic)}
-                </span>
-              `
-              : ""
-          }
+            <strong
+              style="font-size:18px;"
+            >
+              ${escapeHtml(word.word)}
+            </strong>
+
+            ${
+              word.phonetic
+                ? `
+                  <span
+                    style="
+                      margin-left:8px;
+                      color:#777;
+                      font-size:14px;
+                    "
+                  >
+                    ${escapeHtml(word.phonetic)}
+                  </span>
+                `
+                : ""
+            }
+
+          </div>
+
+
+          <button
+            type="button"
+            class="word-audio-btn secondary-btn"
+            data-word-id="${escapeHtml(word.id)}"
+            aria-label="播放 ${escapeHtml(word.word)} 的英文發音"
+            title="聽英文發音"
+          >
+            🔊
+          </button>
+
+
+          <button
+            type="button"
+            class="review-word-btn secondary-btn"
+            data-word-id="${escapeHtml(word.id)}"
+          >
+            🔄 再學一次
+          </button>
 
         </div>
+      `;
 
-
-        <!-- =========================================
-             英文發音
-        ========================================== -->
-
-        <button
-          type="button"
-          class="word-audio-btn secondary-btn"
-          data-word-id="${escapeHtml(word.id)}"
-          aria-label="播放 ${escapeHtml(word.word)} 的英文發音"
-          title="聽英文發音"
-        >
-          🔊
-        </button>
-
-
-        <!-- =========================================
-             再學一次
-        ========================================== -->
-
-        <button
-          type="button"
-          class="review-word-btn secondary-btn"
-          data-word-id="${escapeHtml(word.id)}"
-        >
-          🔄 再學一次
-        </button>
-
-      </div>
-    `;
-
-  }).join("");
+    }).join("");
 
 
   /* =====================================================
      點擊英文單字
-     
-     → 開啟單字詳細資料
+     → 開啟詳細資料
   ===================================================== */
 
   wordList
@@ -726,9 +790,7 @@ function displayWords(words) {
 
   /* =====================================================
      點擊 🔊
-     
      → 只播放英文發音
-     → 不開啟詳細資料
   ===================================================== */
 
   wordList
@@ -740,15 +802,12 @@ function displayWords(words) {
         event => {
 
           event.preventDefault();
-
           event.stopPropagation();
-
 
           const wordId =
             button.dataset.wordId;
 
           if (!wordId) return;
-
 
           const word =
             words.find(
@@ -758,15 +817,6 @@ function displayWords(words) {
             );
 
           if (!word) return;
-
-
-          /*
-            優先使用 Merriam-Webster 音檔。
-
-            如果沒有音檔，
-            playAudioUrl() 會使用英文
-            瀏覽器語音朗讀 word.word。
-          */
 
           playAudioUrl(
             word.audio_url || "",
@@ -782,9 +832,7 @@ function displayWords(words) {
 
   /* =====================================================
      點擊「再學一次」
-     
-     → 開啟該單字詳細資料
-     → 不讓事件冒泡
+     → 開啟詳細資料
   ===================================================== */
 
   wordList
@@ -796,9 +844,7 @@ function displayWords(words) {
         event => {
 
           event.preventDefault();
-
           event.stopPropagation();
-
 
           const wordId =
             button.dataset.wordId;
@@ -814,6 +860,7 @@ function displayWords(words) {
 
 }
 
+
 /* =========================================================
    搜尋單字
 ========================================================= */
@@ -827,11 +874,10 @@ async function searchWords() {
     data: {
       user
     }
-  } = await supabaseClient.auth.getUser();
+  } =
+    await supabaseClient.auth.getUser();
 
-  if (!user) {
-    return;
-  }
+  if (!user) return;
 
   let query =
     supabaseClient
@@ -877,6 +923,7 @@ async function searchWords() {
     );
 
     return;
+
   }
 
   displayWords(data || []);
@@ -906,11 +953,14 @@ function stopAllAudio() {
   if (currentAudio) {
 
     try {
+
       currentAudio.pause();
       currentAudio.currentTime = 0;
+
     } catch (e) {}
 
     currentAudio = null;
+
   }
 
   if (
@@ -967,6 +1017,7 @@ function playAudioUrl(
       });
 
     return;
+
   }
 
   if (fallbackText) {
@@ -993,7 +1044,9 @@ function speakText(
   if (!text) return;
 
   if (
-    !"speechSynthesis" in window
+    !(
+      "speechSynthesis" in window
+    )
   ) {
 
     alert(
@@ -1001,6 +1054,7 @@ function speakText(
     );
 
     return;
+
   }
 
   stopAllAudio();
@@ -1008,7 +1062,8 @@ function speakText(
   const utterance =
     new SpeechSynthesisUtterance(text);
 
-  utterance.lang = language;
+  utterance.lang =
+    language;
 
   utterance.rate =
     language === "zh-TW"
@@ -1062,14 +1117,15 @@ async function lookupWord(word) {
   const {
     data,
     error
-  } = await supabaseClient.functions.invoke(
-    "lookup-word",
-    {
-      body: {
-        word
+  } =
+    await supabaseClient.functions.invoke(
+      "lookup-word",
+      {
+        body: {
+          word
+        }
       }
-    }
-  );
+    );
 
   if (error) {
 
@@ -1079,6 +1135,7 @@ async function lookupWord(word) {
     );
 
     throw error;
+
   }
 
   if (data?.error) {
@@ -1111,6 +1168,7 @@ async function addWord() {
     );
 
     return;
+
   }
 
   showAddWordMessage(
@@ -1118,7 +1176,9 @@ async function addWord() {
   );
 
   if (addWordBtn) {
+
     addWordBtn.disabled = true;
+
   }
 
   try {
@@ -1127,7 +1187,8 @@ async function addWord() {
       data: {
         user
       }
-    } = await supabaseClient.auth.getUser();
+    } =
+      await supabaseClient.auth.getUser();
 
     if (!user) {
 
@@ -1137,27 +1198,22 @@ async function addWord() {
       );
 
       return;
-    }
 
-    /*
-      查詢字典
-    */
+    }
 
     const dictionary =
       await lookupWord(word);
 
-    /*
-      避免同一個使用者重複加入
-    */
 
     const {
       data: existing
-    } = await supabaseClient
-      .from("words")
-      .select("id")
-      .eq("user_id", user.id)
-      .ilike("word", word)
-      .maybeSingle();
+    } =
+      await supabaseClient
+        .from("words")
+        .select("id")
+        .eq("user_id", user.id)
+        .ilike("word", word)
+        .maybeSingle();
 
     if (existing) {
 
@@ -1167,54 +1223,57 @@ async function addWord() {
       );
 
       return;
+
     }
 
-    /*
-      寫入資料庫
-    */
 
     const {
       error
-    } = await supabaseClient
-      .from("words")
-      .insert({
-        user_id: user.id,
+    } =
+      await supabaseClient
+        .from("words")
+        .insert({
 
-        word:
-          dictionary?.word ||
-          word,
+          user_id:
+            user.id,
 
-        phonetic:
-          dictionary?.phonetic ||
-          "",
+          word:
+            dictionary?.word ||
+            word,
 
-        part_of_speech:
-          dictionary?.part_of_speech ||
-          "",
+          phonetic:
+            dictionary?.phonetic ||
+            "",
 
-        chinese_meaning:
-          dictionary?.chinese_meaning ||
-          "",
+          part_of_speech:
+            dictionary?.part_of_speech ||
+            "",
 
-        definition_en:
-          dictionary?.definition_en ||
-          "",
+          chinese_meaning:
+            dictionary?.chinese_meaning ||
+            "",
 
-        example_en:
-          dictionary?.example_en ||
-          "",
+          definition_en:
+            dictionary?.definition_en ||
+            "",
 
-        example_zh:
-          dictionary?.example_zh ||
-          "",
+          example_en:
+            dictionary?.example_en ||
+            "",
 
-        audio_url:
-          dictionary?.audio_url ||
-          "",
+          example_zh:
+            dictionary?.example_zh ||
+            "",
 
-        notes:
-          ""
-      });
+          audio_url:
+            dictionary?.audio_url ||
+            "",
+
+          notes:
+            ""
+
+        });
+
 
     if (error) {
 
@@ -1230,14 +1289,18 @@ async function addWord() {
       );
 
       return;
+
     }
+
 
     showAddWordMessage(
       `「${word}」已加入你的單字庫。`
     );
 
     if (newWordInput) {
+
       newWordInput.value = "";
+
     }
 
     await loadWords();
@@ -1257,7 +1320,9 @@ async function addWord() {
   } finally {
 
     if (addWordBtn) {
+
       addWordBtn.disabled = false;
+
     }
 
   }
@@ -1275,31 +1340,33 @@ async function openWordDetail(wordId) {
     data: {
       user
     }
-  } = await supabaseClient.auth.getUser();
+  } =
+    await supabaseClient.auth.getUser();
 
   if (!user) return;
 
   const {
     data: word,
     error
-  } = await supabaseClient
-    .from("words")
-    .select(`
-      id,
-      word,
-      phonetic,
-      part_of_speech,
-      chinese_meaning,
-      definition_en,
-      example_en,
-      example_zh,
-      notes,
-      audio_url,
-      created_at
-    `)
-    .eq("id", wordId)
-    .eq("user_id", user.id)
-    .single();
+  } =
+    await supabaseClient
+      .from("words")
+      .select(`
+        id,
+        word,
+        phonetic,
+        part_of_speech,
+        chinese_meaning,
+        definition_en,
+        example_en,
+        example_zh,
+        notes,
+        audio_url,
+        created_at
+      `)
+      .eq("id", wordId)
+      .eq("user_id", user.id)
+      .single();
 
   if (error) {
 
@@ -1309,6 +1376,7 @@ async function openWordDetail(wordId) {
     );
 
     return;
+
   }
 
   renderWordDetail(word);
@@ -1326,9 +1394,10 @@ function renderWordDetail(word) {
 
   wordDetail.classList.remove("hidden");
 
-  /*
-    notes 分開成英文 / 中文
-  */
+
+  /* =====================================================
+     筆記拆分
+  ===================================================== */
 
   let englishNotes = "";
   let chineseNotes = "";
@@ -1346,7 +1415,16 @@ function renderWordDetail(word) {
 
   }
 
+
+  /* =====================================================
+     詳細資料 HTML
+  ===================================================== */
+
   wordDetail.innerHTML = `
+
+    <!-- =================================================
+         上方操作
+    ================================================== -->
 
     <div
       style="
@@ -1361,6 +1439,7 @@ function renderWordDetail(word) {
       <button
         id="backToWordsBtn"
         class="secondary-btn"
+        type="button"
       >
         ← 回到我的單字
       </button>
@@ -1368,6 +1447,7 @@ function renderWordDetail(word) {
       <button
         id="deleteWordBtn"
         class="logout-btn"
+        type="button"
       >
         🗑 刪除
       </button>
@@ -1375,16 +1455,32 @@ function renderWordDetail(word) {
     </div>
 
 
+    <!-- =================================================
+         單字
+    ================================================== -->
+
     <h2>
       ${escapeHtml(word.word)}
     </h2>
-<button
+
+
+    <!-- =================================================
+         單字本身發音
+    ================================================== -->
+
+    <button
       id="detailWordAudioBtn"
       class="secondary-btn"
       type="button"
+      style="margin-bottom:12px;"
     >
       🔊 聽單字發音
     </button>
+
+
+    <!-- =================================================
+         音標
+    ================================================== -->
 
     ${
       word.phonetic
@@ -1398,6 +1494,10 @@ function renderWordDetail(word) {
     }
 
 
+    <!-- =================================================
+         詞性
+    ================================================== -->
+
     ${
       word.part_of_speech
         ? `
@@ -1410,24 +1510,12 @@ function renderWordDetail(word) {
     }
 
 
-    ${
-      word.audio_url
-        ? `
-          <div style="margin:12px 0;">
-            <button
-              id="wordAudioBtn"
-              class="secondary-btn"
-            >
-              🔊 聽發音
-            </button>
-          </div>
-        `
-        : ""
-    }
-
-
     <hr>
 
+
+    <!-- =================================================
+         中文意思
+    ================================================== -->
 
     <div
       class="detail-section"
@@ -1451,6 +1539,7 @@ function renderWordDetail(word) {
               <button
                 id="chineseMeaningAudioBtn"
                 class="secondary-btn"
+                type="button"
               >
                 🔊
               </button>
@@ -1471,6 +1560,10 @@ function renderWordDetail(word) {
 
     </div>
 
+
+    <!-- =================================================
+         English Definition
+    ================================================== -->
 
     <div
       class="detail-section"
@@ -1494,6 +1587,7 @@ function renderWordDetail(word) {
               <button
                 id="definitionAudioBtn"
                 class="secondary-btn"
+                type="button"
               >
                 🔊
               </button>
@@ -1514,6 +1608,10 @@ function renderWordDetail(word) {
 
     </div>
 
+
+    <!-- =================================================
+         英文例句
+    ================================================== -->
 
     <div
       class="detail-section"
@@ -1537,6 +1635,7 @@ function renderWordDetail(word) {
               <button
                 id="exampleEnAudioBtn"
                 class="secondary-btn"
+                type="button"
               >
                 🔊
               </button>
@@ -1557,6 +1656,10 @@ function renderWordDetail(word) {
 
     </div>
 
+
+    <!-- =================================================
+         中文例句
+    ================================================== -->
 
     <div
       class="detail-section"
@@ -1580,6 +1683,7 @@ function renderWordDetail(word) {
               <button
                 id="exampleZhAudioBtn"
                 class="secondary-btn"
+                type="button"
               >
                 🔊
               </button>
@@ -1603,6 +1707,10 @@ function renderWordDetail(word) {
 
     <hr>
 
+
+    <!-- =================================================
+         英文筆記
+    ================================================== -->
 
     <div
       class="detail-section"
@@ -1628,6 +1736,7 @@ function renderWordDetail(word) {
             <button
               id="englishNotesAudioBtn"
               class="secondary-btn"
+              type="button"
               style="margin-top:6px;"
             >
               🔊 朗讀英文筆記
@@ -1638,6 +1747,10 @@ function renderWordDetail(word) {
 
     </div>
 
+
+    <!-- =================================================
+         中文筆記
+    ================================================== -->
 
     <div
       class="detail-section"
@@ -1663,6 +1776,7 @@ function renderWordDetail(word) {
             <button
               id="chineseNotesAudioBtn"
               class="secondary-btn"
+              type="button"
               style="margin-top:6px;"
             >
               🔊 朗讀中文筆記
@@ -1673,6 +1787,10 @@ function renderWordDetail(word) {
 
     </div>
 
+
+    <!-- =================================================
+         儲存 / 全部播放
+    ================================================== -->
 
     <div
       style="
@@ -1686,6 +1804,7 @@ function renderWordDetail(word) {
       <button
         id="saveNotesBtn"
         class="primary-btn"
+        type="button"
       >
         💾 儲存筆記
       </button>
@@ -1693,6 +1812,7 @@ function renderWordDetail(word) {
       <button
         id="playAllBtn"
         class="secondary-btn"
+        type="button"
       >
         ▶️ 全部播放
       </button>
@@ -1709,7 +1829,7 @@ function renderWordDetail(word) {
 
 
   /* =====================================================
-     按鈕事件
+     返回
   ===================================================== */
 
   const backBtn =
@@ -1727,6 +1847,10 @@ function renderWordDetail(word) {
   }
 
 
+  /* =====================================================
+     刪除
+  ===================================================== */
+
   const deleteBtn =
     document.getElementById(
       "deleteWordBtn"
@@ -1742,20 +1866,24 @@ function renderWordDetail(word) {
   }
 
 
-  const audioBtn =
+  /* =====================================================
+     ⭐ 單字本身英文發音
+  ===================================================== */
+
+  const detailWordAudioBtn =
     document.getElementById(
-      "wordAudioBtn"
+      "detailWordAudioBtn"
     );
 
-  if (audioBtn) {
+  if (detailWordAudioBtn) {
 
-    audioBtn.addEventListener(
+    detailWordAudioBtn.addEventListener(
       "click",
       () => {
 
         playAudioUrl(
-          word.audio_url,
-          word.word,
+          word.audio_url || "",
+          word.word || "",
           "en-US"
         );
 
@@ -1764,6 +1892,10 @@ function renderWordDetail(word) {
 
   }
 
+
+  /* =====================================================
+     中文意思發音
+  ===================================================== */
 
   const chineseMeaningAudioBtn =
     document.getElementById(
@@ -1774,13 +1906,21 @@ function renderWordDetail(word) {
 
     chineseMeaningAudioBtn.addEventListener(
       "click",
-      () => playChinese(
-        word.chinese_meaning
-      )
+      () => {
+
+        playChinese(
+          word.chinese_meaning
+        );
+
+      }
     );
 
   }
 
+
+  /* =====================================================
+     English Definition 發音
+  ===================================================== */
 
   const definitionAudioBtn =
     document.getElementById(
@@ -1791,13 +1931,21 @@ function renderWordDetail(word) {
 
     definitionAudioBtn.addEventListener(
       "click",
-      () => playEnglish(
-        word.definition_en
-      )
+      () => {
+
+        playEnglish(
+          word.definition_en
+        );
+
+      }
     );
 
   }
 
+
+  /* =====================================================
+     英文例句發音
+  ===================================================== */
 
   const exampleEnAudioBtn =
     document.getElementById(
@@ -1808,13 +1956,21 @@ function renderWordDetail(word) {
 
     exampleEnAudioBtn.addEventListener(
       "click",
-      () => playEnglish(
-        word.example_en
-      )
+      () => {
+
+        playEnglish(
+          word.example_en
+        );
+
+      }
     );
 
   }
 
+
+  /* =====================================================
+     中文例句發音
+  ===================================================== */
 
   const exampleZhAudioBtn =
     document.getElementById(
@@ -1825,13 +1981,21 @@ function renderWordDetail(word) {
 
     exampleZhAudioBtn.addEventListener(
       "click",
-      () => playChinese(
-        word.example_zh
-      )
+      () => {
+
+        playChinese(
+          word.example_zh
+        );
+
+      }
     );
 
   }
 
+
+  /* =====================================================
+     英文筆記發音
+  ===================================================== */
 
   const englishNotesAudioBtn =
     document.getElementById(
@@ -1859,6 +2023,10 @@ function renderWordDetail(word) {
   }
 
 
+  /* =====================================================
+     中文筆記發音
+  ===================================================== */
+
   const chineseNotesAudioBtn =
     document.getElementById(
       "chineseNotesAudioBtn"
@@ -1885,6 +2053,10 @@ function renderWordDetail(word) {
   }
 
 
+  /* =====================================================
+     儲存筆記
+  ===================================================== */
+
   const saveNotesBtn =
     document.getElementById(
       "saveNotesBtn"
@@ -1899,6 +2071,10 @@ function renderWordDetail(word) {
 
   }
 
+
+  /* =====================================================
+     全部播放
+  ===================================================== */
 
   const playAllBtn =
     document.getElementById(
@@ -1915,9 +2091,9 @@ function renderWordDetail(word) {
   }
 
 
-  /*
-    自動捲到詳細資料
-  */
+  /* =====================================================
+     自動捲到詳細資料
+  ===================================================== */
 
   wordDetail.scrollIntoView({
     behavior: "smooth",
@@ -2005,23 +2181,28 @@ async function saveNotes(wordId) {
 
   }
 
+
   const {
     data: {
       user
     }
-  } = await supabaseClient.auth.getUser();
+  } =
+    await supabaseClient.auth.getUser();
 
   if (!user) return;
 
+
   const {
     error
-  } = await supabaseClient
-    .from("words")
-    .update({
-      notes
-    })
-    .eq("id", wordId)
-    .eq("user_id", user.id);
+  } =
+    await supabaseClient
+      .from("words")
+      .update({
+        notes
+      })
+      .eq("id", wordId)
+      .eq("user_id", user.id);
+
 
   if (error) {
 
@@ -2042,7 +2223,9 @@ async function saveNotes(wordId) {
     }
 
     return;
+
   }
+
 
   if (detailMessage) {
 
@@ -2068,25 +2251,28 @@ async function deleteWord(wordId) {
       "確定要刪除這個單字嗎？"
     );
 
-  if (!confirmed) {
-    return;
-  }
+  if (!confirmed) return;
+
 
   const {
     data: {
       user
     }
-  } = await supabaseClient.auth.getUser();
+  } =
+    await supabaseClient.auth.getUser();
 
   if (!user) return;
 
+
   const {
     error
-  } = await supabaseClient
-    .from("words")
-    .delete()
-    .eq("id", wordId)
-    .eq("user_id", user.id);
+  } =
+    await supabaseClient
+      .from("words")
+      .delete()
+      .eq("id", wordId)
+      .eq("user_id", user.id);
+
 
   if (error) {
 
@@ -2101,7 +2287,9 @@ async function deleteWord(wordId) {
     );
 
     return;
+
   }
+
 
   stopAllAudio();
 
@@ -2125,6 +2313,7 @@ async function playAll(word) {
 
   const items = [];
 
+
   if (word.word) {
 
     items.push({
@@ -2133,6 +2322,7 @@ async function playAll(word) {
     });
 
   }
+
 
   if (word.chinese_meaning) {
 
@@ -2143,6 +2333,7 @@ async function playAll(word) {
 
   }
 
+
   if (word.definition_en) {
 
     items.push({
@@ -2151,6 +2342,7 @@ async function playAll(word) {
     });
 
   }
+
 
   if (word.example_en) {
 
@@ -2161,6 +2353,7 @@ async function playAll(word) {
 
   }
 
+
   if (word.example_zh) {
 
     items.push({
@@ -2170,27 +2363,36 @@ async function playAll(word) {
 
   }
 
+
   let index = 0;
 
 
   function playNext() {
 
     if (
-      generation !== playAllGeneration
+      generation !==
+      playAllGeneration
     ) {
+
       return;
+
     }
+
 
     if (
       index >= items.length
     ) {
+
       return;
+
     }
+
 
     const item =
       items[index];
 
     index++;
+
 
     const utterance =
       new SpeechSynthesisUtterance(
@@ -2205,6 +2407,7 @@ async function playAll(word) {
         ? 0.9
         : 0.85;
 
+
     utterance.onend =
       () => {
 
@@ -2212,7 +2415,9 @@ async function playAll(word) {
           generation !==
           playAllGeneration
         ) {
+
           return;
+
         }
 
         setTimeout(
@@ -2222,6 +2427,7 @@ async function playAll(word) {
 
       };
 
+
     utterance.onerror =
       () => {
 
@@ -2229,12 +2435,15 @@ async function playAll(word) {
           generation !==
           playAllGeneration
         ) {
+
           return;
+
         }
 
         playNext();
 
       };
+
 
     currentUtterance =
       utterance;
@@ -2244,6 +2453,7 @@ async function playAll(word) {
     );
 
   }
+
 
   playNext();
 
@@ -2286,16 +2496,12 @@ async function checkUser() {
 supabaseClient.auth.onAuthStateChange(
   async (event, session) => {
 
-    /*
-      INITIAL_SESSION：
-      checkUser() 會處理，
-      避免重複載入。
-    */
-
     if (
       event === "INITIAL_SESSION"
     ) {
+
       return;
+
     }
 
     if (session?.user) {
@@ -2379,7 +2585,9 @@ if (passwordInput) {
     event => {
 
       if (event.key === "Enter") {
+
         login();
+
       }
 
     }
@@ -2395,7 +2603,9 @@ if (usernameInput) {
     event => {
 
       if (event.key === "Enter") {
+
         login();
+
       }
 
     }
@@ -2411,7 +2621,9 @@ if (newWordInput) {
     event => {
 
       if (event.key === "Enter") {
+
         addWord();
+
       }
 
     }
@@ -2427,7 +2639,9 @@ if (searchInput) {
     event => {
 
       if (event.key === "Enter") {
+
         searchWords();
+
       }
 
     }
