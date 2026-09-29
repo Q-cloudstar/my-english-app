@@ -472,8 +472,17 @@ input:focus {
 
 .notes-input {
   display: block;
+
   width: 100%;
-  min-height: 180px;
+
+  /*
+    根據瀏覽器視窗高度自動調整：
+    最小 150px
+    理想高度約為視窗高度的 22%
+    最大 320px
+  */
+  height: clamp(150px, 22vh, 320px);
+
   box-sizing: border-box;
 
   padding: 14px 16px;
@@ -501,32 +510,83 @@ input:focus {
 
 .notes-actions {
   margin-top: 10px;
+
   display: flex;
+
   gap: 10px;
+
+  flex-wrap: wrap;
 }
 
 .notes-message {
   min-height: 24px;
+
   margin: 10px 0;
+
   font-size: 14px;
 }
 
-/* 電腦版 */
+
+/* ========================================
+   電腦版
+======================================== */
+
 @media (min-width: 768px) {
 
   .notes-input {
-    min-height: 220px;
+    /*
+      電腦螢幕較大，
+      讓筆記區更舒服
+    */
+    height: clamp(200px, 28vh, 380px);
+
     font-size: 17px;
+
+    line-height: 1.8;
+
+    padding: 16px 18px;
   }
 
 }
 
-/* 手機版 */
+
+/* ========================================
+   手機版
+======================================== */
+
 @media (max-width: 767px) {
 
   .notes-input {
-    min-height: 180px;
+
+    /*
+      手機不要太高，
+      避免整個畫面都是筆記框
+    */
+    height: clamp(140px, 24vh, 230px);
+
     font-size: 16px;
+
+    line-height: 1.7;
+
+    padding: 12px 14px;
+
+  }
+
+}
+
+
+/* ========================================
+   小手機
+======================================== */
+
+@media (max-width: 380px) {
+
+  .notes-input {
+
+    height: clamp(130px, 22vh, 200px);
+
+    font-size: 16px;
+
   }
 
 }
