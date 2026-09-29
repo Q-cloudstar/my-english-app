@@ -579,6 +579,10 @@ function displayWords(words) {
 
   if (!wordList) return;
 
+  /* =====================================================
+     沒有單字
+  ===================================================== */
+
   if (!words || words.length === 0) {
 
     wordList.innerHTML = `
@@ -590,94 +594,129 @@ function displayWords(words) {
     return;
   }
 
-  wordList.innerHTML =
-    words.map(word => {
 
-      return `
+  /* =====================================================
+     顯示單字列表
+     
+     固定格式：
+     英文單字 + 音標 + 🔊 + 🔄 再學一次
+     
+     中文翻譯不在列表顯示。
+  ===================================================== */
+
+  wordList.innerHTML = words.map(word => {
+
+    return `
+      <div
+        class="word-item"
+        data-word-id="${escapeHtml(word.id)}"
+        style="
+          display:flex;
+          align-items:center;
+          gap:10px;
+          padding:14px 16px;
+          margin:8px 0;
+          border:1px solid #e5e5e5;
+          border-radius:10px;
+          background:#fff;
+          box-sizing:border-box;
+        "
+      >
+
+        <!-- =========================================
+             英文單字 + 音標
+        ========================================== -->
+
         <div
-          class="word-item"
+          class="word-main"
           data-word-id="${escapeHtml(word.id)}"
           style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            gap:12px;
-            padding:14px 16px;
-            margin:8px 0;
-            border-radius:10px;
-            border:1px solid #e5e5e5;
-            background:#fff;
+            flex:1;
+            min-width:0;
+            cursor:pointer;
           "
         >
 
-          <div
-            class="word-main"
+          <strong
             style="
-              flex:1;
-              cursor:pointer;
+              font-size:18px;
             "
           >
+            ${escapeHtml(word.word)}
+          </strong>
 
-            <strong
-              style="
-                font-size:18px;
-              "
-            >
-              ${escapeHtml(word.word)}
-            </strong>
-
-            ${
-              word.phonetic
-                ? `
-                  <span
-                    style="
-                      margin-left:8px;
-                      color:#777;
-                      font-size:14px;
-                    "
-                  >
-                    ${escapeHtml(word.phonetic)}
-                  </span>
-                `
-                : ""
-            }
-
-          </div>
-
-
-          <button
-            class="review-word-btn secondary-btn"
-            data-word-id="${escapeHtml(word.id)}"
-            type="button"
-          >
-            🔄 再學一次
-          </button>
+          ${
+            word.phonetic
+              ? `
+                <span
+                  style="
+                    margin-left:8px;
+                    color:#777;
+                    font-size:14px;
+                  "
+                >
+                  ${escapeHtml(word.phonetic)}
+                </span>
+              `
+              : ""
+          }
 
         </div>
-      `;
-
-    }).join("");
 
 
-  /* 點單字 → 開啟詳細資料 */
+        <!-- =========================================
+             英文發音
+        ========================================== -->
 
-  document
+        <button
+          type="button"
+          class="word-audio-btn secondary-btn"
+          data-word-id="${escapeHtml(word.id)}"
+          aria-label="播放 ${escapeHtml(word.word)} 的英文發音"
+          title="聽英文發音"
+        >
+          🔊
+        </button>
+
+
+        <!-- =========================================
+             再學一次
+        ========================================== -->
+
+        <button
+          type="button"
+          class="review-word-btn secondary-btn"
+          data-word-id="${escapeHtml(word.id)}"
+        >
+          🔄 再學一次
+        </button>
+
+      </div>
+    `;
+
+  }).join("");
+
+
+  /* =====================================================
+     點擊英文單字
+     
+     → 開啟單字詳細資料
+  ===================================================== */
+
+  wordList
     .querySelectorAll(".word-main")
-    .forEach(item => {
+    .forEach(element => {
 
-      item.addEventListener(
+      element.addEventListener(
         "click",
         () => {
 
-          const parent =
-            item.closest(".word-item");
+          const wordId =
+            element.dataset.wordId;
 
-          const id =
-            parent?.dataset.wordId;
+          if (!wordId) return;
 
-          if (id) {
-            openWordDetail(id);
-          }
+          openWordDetail(wordId);
 
         }
       );
@@ -685,9 +724,70 @@ function displayWords(words) {
     });
 
 
-  /* 再學一次 */
+  /* =====================================================
+     點擊 🔊
+     
+     → 只播放英文發音
+     → 不開啟詳細資料
+  ===================================================== */
 
-  document
+  wordList
+    .querySelectorAll(".word-audio-btn")
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        event => {
+
+          event.preventDefault();
+
+          event.stopPropagation();
+
+
+          const wordId =
+            button.dataset.wordId;
+
+          if (!wordId) return;
+
+
+          const word =
+            words.find(
+              item =>
+                String(item.id) ===
+                String(wordId)
+            );
+
+          if (!word) return;
+
+
+          /*
+            優先使用 Merriam-Webster 音檔。
+
+            如果沒有音檔，
+            playAudioUrl() 會使用英文
+            瀏覽器語音朗讀 word.word。
+          */
+
+          playAudioUrl(
+            word.audio_url || "",
+            word.word || "",
+            "en-US"
+          );
+
+        }
+      );
+
+    });
+
+
+  /* =====================================================
+     點擊「再學一次」
+     
+     → 開啟該單字詳細資料
+     → 不讓事件冒泡
+  ===================================================== */
+
+  wordList
     .querySelectorAll(".review-word-btn")
     .forEach(button => {
 
@@ -695,14 +795,17 @@ function displayWords(words) {
         "click",
         event => {
 
+          event.preventDefault();
+
           event.stopPropagation();
 
-          const id =
+
+          const wordId =
             button.dataset.wordId;
 
-          if (id) {
-            openWordDetail(id);
-          }
+          if (!wordId) return;
+
+          openWordDetail(wordId);
 
         }
       );
