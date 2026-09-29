@@ -136,6 +136,8 @@ function escapeHtml(value) {
 
 function showAuth() {
 
+  stopAllAudio();
+
   if (authSection) {
 
     authSection.classList.remove("hidden");
@@ -153,6 +155,7 @@ function showAuth() {
   if (wordDetail) {
 
     wordDetail.classList.add("hidden");
+    wordDetail.innerHTML = "";
 
   }
 
@@ -386,6 +389,11 @@ async function signup() {
 
     }
 
+    /*
+       建立 profile。
+
+       如果 profile 已經存在，不視為錯誤。
+    */
     const {
       error: profileError
     } =
@@ -398,7 +406,7 @@ async function signup() {
 
     if (
       profileError &&
-      !profileError.message?.includes(
+      !profileError.message?.toLowerCase().includes(
         "duplicate"
       )
     ) {
@@ -764,7 +772,6 @@ function displayWords(words) {
 
   /* =====================================================
      點擊英文單字
-     → 開啟詳細資料
   ===================================================== */
 
   wordList
@@ -789,8 +796,7 @@ function displayWords(words) {
 
 
   /* =====================================================
-     點擊 🔊
-     → 只播放英文發音
+     點擊英文發音
   ===================================================== */
 
   wordList
@@ -832,7 +838,6 @@ function displayWords(words) {
 
   /* =====================================================
      點擊「再學一次」
-     → 開啟詳細資料
   ===================================================== */
 
   wordList
@@ -922,6 +927,16 @@ async function searchWords() {
       error
     );
 
+    if (wordList) {
+
+      wordList.innerHTML = `
+        <p class="message">
+          搜尋失敗，請稍後再試。
+        </p>
+      `;
+
+    }
+
     return;
 
   }
@@ -948,7 +963,12 @@ let playAllGeneration = 0;
 
 function stopAllAudio() {
 
+  /*
+     每次停止都增加版本號，
+     讓舊的「全部播放」立即失效。
+  */
   playAllGeneration++;
+
 
   if (currentAudio) {
 
@@ -957,17 +977,36 @@ function stopAllAudio() {
       currentAudio.pause();
       currentAudio.currentTime = 0;
 
-    } catch (e) {}
+    } catch (e) {
+
+      console.warn(
+        "停止音檔時發生問題：",
+        e
+      );
+
+    }
 
     currentAudio = null;
 
   }
 
+
   if (
     "speechSynthesis" in window
   ) {
 
-    window.speechSynthesis.cancel();
+    try {
+
+      window.speechSynthesis.cancel();
+
+    } catch (e) {
+
+      console.warn(
+        "停止語音時發生問題：",
+        e
+      );
+
+    }
 
   }
 
@@ -995,6 +1034,49 @@ function playAudioUrl(
 
     currentAudio = audio;
 
+
+    audio.onended =
+      () => {
+
+        if (
+          currentAudio === audio
+        ) {
+
+          currentAudio = null;
+
+        }
+
+      };
+
+
+    audio.onerror =
+      () => {
+
+        if (
+          currentAudio === audio
+        ) {
+
+          currentAudio = null;
+
+        }
+
+        console.warn(
+          "音檔播放失敗，改用瀏覽器語音：",
+          url
+        );
+
+        if (fallbackText) {
+
+          speakText(
+            fallbackText,
+            language
+          );
+
+        }
+
+      };
+
+
     audio.play()
       .catch(error => {
 
@@ -1003,7 +1085,13 @@ function playAudioUrl(
           error
         );
 
-        currentAudio = null;
+        if (
+          currentAudio === audio
+        ) {
+
+          currentAudio = null;
+
+        }
 
         if (fallbackText) {
 
@@ -1019,6 +1107,7 @@ function playAudioUrl(
     return;
 
   }
+
 
   if (fallbackText) {
 
@@ -1044,9 +1133,7 @@ function speakText(
   if (!text) return;
 
   if (
-    !(
-      "speechSynthesis" in window
-    )
+    !("speechSynthesis" in window)
   ) {
 
     alert(
@@ -1059,8 +1146,11 @@ function speakText(
 
   stopAllAudio();
 
+
   const utterance =
-    new SpeechSynthesisUtterance(text);
+    new SpeechSynthesisUtterance(
+      String(text)
+    );
 
   utterance.lang =
     language;
@@ -1070,8 +1160,38 @@ function speakText(
       ? 0.9
       : 0.85;
 
+
+  utterance.onend =
+    () => {
+
+      if (
+        currentUtterance === utterance
+      ) {
+
+        currentUtterance = null;
+
+      }
+
+    };
+
+
+  utterance.onerror =
+    () => {
+
+      if (
+        currentUtterance === utterance
+      ) {
+
+        currentUtterance = null;
+
+      }
+
+    };
+
+
   currentUtterance =
     utterance;
+
 
   window.speechSynthesis.speak(
     utterance
@@ -1114,6 +1234,12 @@ function playChinese(text) {
 
 async function lookupWord(word) {
 
+  console.log(
+    "開始查詢單字：",
+    word
+  );
+
+
   const {
     data,
     error
@@ -1127,6 +1253,7 @@ async function lookupWord(word) {
       }
     );
 
+
   if (error) {
 
     console.error(
@@ -1138,6 +1265,13 @@ async function lookupWord(word) {
 
   }
 
+
+  console.log(
+    "lookup-word 原始回傳：",
+    data
+  );
+
+
   if (data?.error) {
 
     throw new Error(
@@ -1146,7 +1280,51 @@ async function lookupWord(word) {
 
   }
 
-  return data;
+
+  /*
+     支援兩種可能的 Edge Function 回傳：
+
+     ①
+     {
+       word: "...",
+       chinese_meaning: "..."
+     }
+
+     ②
+     {
+       data: {
+         word: "...",
+         chinese_meaning: "..."
+       }
+     }
+  */
+
+  const dictionary =
+    data?.data &&
+    typeof data.data === "object"
+      ? data.data
+      : data;
+
+
+  if (
+    !dictionary ||
+    typeof dictionary !== "object"
+  ) {
+
+    throw new Error(
+      "字典服務沒有回傳有效資料。"
+    );
+
+  }
+
+
+  console.log(
+    "整理後的字典資料：",
+    dictionary
+  );
+
+
+  return dictionary;
 
 }
 
@@ -1160,6 +1338,7 @@ async function addWord() {
   const word =
     newWordInput?.value.trim() || "";
 
+
   if (!word) {
 
     showAddWordMessage(
@@ -1171,15 +1350,18 @@ async function addWord() {
 
   }
 
+
   showAddWordMessage(
     "正在查詢單字資料……"
   );
+
 
   if (addWordBtn) {
 
     addWordBtn.disabled = true;
 
   }
+
 
   try {
 
@@ -1189,6 +1371,7 @@ async function addWord() {
       }
     } =
       await supabaseClient.auth.getUser();
+
 
     if (!user) {
 
@@ -1201,19 +1384,103 @@ async function addWord() {
 
     }
 
+
+    /* =====================================================
+       查字典
+    ===================================================== */
+
     const dictionary =
       await lookupWord(word);
 
 
+    /*
+       這裡明確整理所有欄位。
+
+       如果 Edge Function 沒有提供某個欄位，
+       就存空字串，不會造成 undefined。
+    */
+
+    const wordValue =
+      dictionary?.word ||
+      word;
+
+    const phonetic =
+      dictionary?.phonetic ||
+      "";
+
+    const partOfSpeech =
+      dictionary?.part_of_speech ||
+      "";
+
+    const chineseMeaning =
+      dictionary?.chinese_meaning ||
+      "";
+
+    const definitionEn =
+      dictionary?.definition_en ||
+      "";
+
+    const exampleEn =
+      dictionary?.example_en ||
+      "";
+
+    const exampleZh =
+      dictionary?.example_zh ||
+      "";
+
+    const audioUrl =
+      dictionary?.audio_url ||
+      "";
+
+
+    console.log(
+      "準備儲存的單字資料：",
+      {
+        word: wordValue,
+        phonetic,
+        part_of_speech: partOfSpeech,
+        chinese_meaning: chineseMeaning,
+        definition_en: definitionEn,
+        example_en: exampleEn,
+        example_zh: exampleZh,
+        audio_url: audioUrl
+      }
+    );
+
+
+    /* =====================================================
+       檢查是否已經存在
+    ===================================================== */
+
     const {
-      data: existing
+      data: existing,
+      error: existingError
     } =
       await supabaseClient
         .from("words")
         .select("id")
         .eq("user_id", user.id)
-        .ilike("word", word)
+        .ilike("word", wordValue)
         .maybeSingle();
+
+
+    if (existingError) {
+
+      console.error(
+        "檢查重複單字失敗：",
+        existingError
+      );
+
+      showAddWordMessage(
+        "檢查單字時發生錯誤：" +
+        existingError.message,
+        true
+      );
+
+      return;
+
+    }
+
 
     if (existing) {
 
@@ -1227,7 +1494,12 @@ async function addWord() {
     }
 
 
+    /* =====================================================
+       儲存
+    ===================================================== */
+
     const {
+      data: insertedData,
       error
     } =
       await supabaseClient
@@ -1238,41 +1510,35 @@ async function addWord() {
             user.id,
 
           word:
-            dictionary?.word ||
-            word,
+            wordValue,
 
           phonetic:
-            dictionary?.phonetic ||
-            "",
+            phonetic,
 
           part_of_speech:
-            dictionary?.part_of_speech ||
-            "",
+            partOfSpeech,
 
           chinese_meaning:
-            dictionary?.chinese_meaning ||
-            "",
+            chineseMeaning,
 
           definition_en:
-            dictionary?.definition_en ||
-            "",
+            definitionEn,
 
           example_en:
-            dictionary?.example_en ||
-            "",
+            exampleEn,
 
           example_zh:
-            dictionary?.example_zh ||
-            "",
+            exampleZh,
 
           audio_url:
-            dictionary?.audio_url ||
-            "",
+            audioUrl,
 
           notes:
             ""
 
-        });
+        })
+        .select()
+        .single();
 
 
     if (error) {
@@ -1293,9 +1559,16 @@ async function addWord() {
     }
 
 
-    showAddWordMessage(
-      `「${word}」已加入你的單字庫。`
+    console.log(
+      "成功儲存單字：",
+      insertedData
     );
+
+
+    showAddWordMessage(
+      `「${wordValue}」已加入你的單字庫。`
+    );
+
 
     if (newWordInput) {
 
@@ -1303,7 +1576,9 @@ async function addWord() {
 
     }
 
+
     await loadWords();
+
 
   } catch (error) {
 
@@ -1312,10 +1587,18 @@ async function addWord() {
       error
     );
 
+
+    /*
+       不把真正的錯誤全部吃掉，
+       方便你之後如果需要看 Console。
+    */
+
     showAddWordMessage(
-      "查詢單字資料失敗，請稍後再試。",
+      "查詢單字資料失敗：" +
+      (error?.message || "請稍後再試。"),
       true
     );
+
 
   } finally {
 
@@ -1343,7 +1626,9 @@ async function openWordDetail(wordId) {
   } =
     await supabaseClient.auth.getUser();
 
+
   if (!user) return;
+
 
   const {
     data: word,
@@ -1368,6 +1653,7 @@ async function openWordDetail(wordId) {
       .eq("user_id", user.id)
       .single();
 
+
   if (error) {
 
     console.error(
@@ -1378,6 +1664,7 @@ async function openWordDetail(wordId) {
     return;
 
   }
+
 
   renderWordDetail(word);
 
@@ -1392,6 +1679,10 @@ function renderWordDetail(word) {
 
   if (!wordDetail) return;
 
+
+  stopAllAudio();
+
+
   wordDetail.classList.remove("hidden");
 
 
@@ -1402,6 +1693,7 @@ function renderWordDetail(word) {
   let englishNotes = "";
   let chineseNotes = "";
 
+
   if (word.notes) {
 
     const parts =
@@ -1411,7 +1703,7 @@ function renderWordDetail(word) {
       parts[0] || "";
 
     chineseNotes =
-      parts[1] || "";
+      parts.slice(1).join(noteSeparator) || "";
 
   }
 
@@ -1421,10 +1713,6 @@ function renderWordDetail(word) {
   ===================================================== */
 
   wordDetail.innerHTML = `
-
-    <!-- =================================================
-         上方操作
-    ================================================== -->
 
     <div
       style="
@@ -1455,18 +1743,10 @@ function renderWordDetail(word) {
     </div>
 
 
-    <!-- =================================================
-         單字
-    ================================================== -->
-
     <h2>
       ${escapeHtml(word.word)}
     </h2>
 
-
-    <!-- =================================================
-         單字本身發音
-    ================================================== -->
 
     <button
       id="detailWordAudioBtn"
@@ -1477,10 +1757,6 @@ function renderWordDetail(word) {
       🔊 聽單字發音
     </button>
 
-
-    <!-- =================================================
-         音標
-    ================================================== -->
 
     ${
       word.phonetic
@@ -1493,10 +1769,6 @@ function renderWordDetail(word) {
         : ""
     }
 
-
-    <!-- =================================================
-         詞性
-    ================================================== -->
 
     ${
       word.part_of_speech
@@ -1513,9 +1785,7 @@ function renderWordDetail(word) {
     <hr>
 
 
-    <!-- =================================================
-         中文意思
-    ================================================== -->
+    <!-- 中文意思 -->
 
     <div
       class="detail-section"
@@ -1561,9 +1831,7 @@ function renderWordDetail(word) {
     </div>
 
 
-    <!-- =================================================
-         English Definition
-    ================================================== -->
+    <!-- English Definition -->
 
     <div
       class="detail-section"
@@ -1609,9 +1877,7 @@ function renderWordDetail(word) {
     </div>
 
 
-    <!-- =================================================
-         英文例句
-    ================================================== -->
+    <!-- 英文例句 -->
 
     <div
       class="detail-section"
@@ -1657,9 +1923,7 @@ function renderWordDetail(word) {
     </div>
 
 
-    <!-- =================================================
-         中文例句
-    ================================================== -->
+    <!-- 中文例句 -->
 
     <div
       class="detail-section"
@@ -1708,9 +1972,7 @@ function renderWordDetail(word) {
     <hr>
 
 
-    <!-- =================================================
-         英文筆記
-    ================================================== -->
+    <!-- 英文筆記 -->
 
     <div
       class="detail-section"
@@ -1748,9 +2010,7 @@ function renderWordDetail(word) {
     </div>
 
 
-    <!-- =================================================
-         中文筆記
-    ================================================== -->
+    <!-- 中文筆記 -->
 
     <div
       class="detail-section"
@@ -1788,9 +2048,7 @@ function renderWordDetail(word) {
     </div>
 
 
-    <!-- =================================================
-         儲存 / 全部播放
-    ================================================== -->
+    <!-- 儲存 / 全部播放 -->
 
     <div
       style="
@@ -1867,7 +2125,7 @@ function renderWordDetail(word) {
 
 
   /* =====================================================
-     ⭐ 單字本身英文發音
+     單字英文發音
   ===================================================== */
 
   const detailWordAudioBtn =
@@ -1909,7 +2167,7 @@ function renderWordDetail(word) {
       () => {
 
         playChinese(
-          word.chinese_meaning
+          word.chinese_meaning || ""
         );
 
       }
@@ -1934,7 +2192,7 @@ function renderWordDetail(word) {
       () => {
 
         playEnglish(
-          word.definition_en
+          word.definition_en || ""
         );
 
       }
@@ -1959,7 +2217,7 @@ function renderWordDetail(word) {
       () => {
 
         playEnglish(
-          word.example_en
+          word.example_en || ""
         );
 
       }
@@ -1984,7 +2242,7 @@ function renderWordDetail(word) {
       () => {
 
         playChinese(
-          word.example_zh
+          word.example_zh || ""
         );
 
       }
@@ -2162,6 +2420,7 @@ async function saveNotes(wordId) {
 
   let notes = "";
 
+
   if (english && chinese) {
 
     notes =
@@ -2188,6 +2447,7 @@ async function saveNotes(wordId) {
     }
   } =
     await supabaseClient.auth.getUser();
+
 
   if (!user) return;
 
@@ -2251,6 +2511,7 @@ async function deleteWord(wordId) {
       "確定要刪除這個單字嗎？"
     );
 
+
   if (!confirmed) return;
 
 
@@ -2260,6 +2521,7 @@ async function deleteWord(wordId) {
     }
   } =
     await supabaseClient.auth.getUser();
+
 
   if (!user) return;
 
@@ -2304,35 +2566,56 @@ async function deleteWord(wordId) {
    全部播放
 ========================================================= */
 
-async function playAll(word) {
+function playAll(word) {
 
   stopAllAudio();
+
+
+  if (
+    !("speechSynthesis" in window)
+  ) {
+
+    alert(
+      "你的瀏覽器不支援語音朗讀。"
+    );
+
+    return;
+
+  }
+
+
+  /*
+     取得這次播放的版本。
+
+     如果使用者中途按任何其他 🔊，
+     stopAllAudio() 會讓這次播放失效。
+  */
 
   const generation =
     playAllGeneration;
 
+
   const items = [];
 
+
+  /*
+     ① 英文單字
+  */
 
   if (word.word) {
 
     items.push({
       text: word.word,
-      language: "en-US"
+      language: "en-US",
+      audioUrl: word.audio_url || ""
     });
 
   }
 
 
-  if (word.chinese_meaning) {
-
-    items.push({
-      text: word.chinese_meaning,
-      language: "zh-TW"
-    });
-
-  }
-
+  /*
+     ② 英文定義
+  */
 
   if (word.definition_en) {
 
@@ -2344,6 +2627,10 @@ async function playAll(word) {
   }
 
 
+  /*
+     ③ 英文例句
+  */
+
   if (word.example_en) {
 
     items.push({
@@ -2353,6 +2640,24 @@ async function playAll(word) {
 
   }
 
+
+  /*
+     ④ 中文意思
+  */
+
+  if (word.chinese_meaning) {
+
+    items.push({
+      text: word.chinese_meaning,
+      language: "zh-TW"
+    });
+
+  }
+
+
+  /*
+     ⑤ 中文例句
+  */
 
   if (word.example_zh) {
 
@@ -2364,15 +2669,29 @@ async function playAll(word) {
   }
 
 
+  if (items.length === 0) {
+
+    return;
+
+  }
+
+
   let index = 0;
+
+
+  function isCancelled() {
+
+    return (
+      generation !==
+      playAllGeneration
+    );
+
+  }
 
 
   function playNext() {
 
-    if (
-      generation !==
-      playAllGeneration
-    ) {
+    if (isCancelled()) {
 
       return;
 
@@ -2383,6 +2702,7 @@ async function playAll(word) {
       index >= items.length
     ) {
 
+      currentUtterance = null;
       return;
 
     }
@@ -2394,63 +2714,179 @@ async function playAll(word) {
     index++;
 
 
-    const utterance =
-      new SpeechSynthesisUtterance(
-        item.text
-      );
+    /*
+       第一項如果有真正的音檔，
+       優先使用音檔。
+    */
 
-    utterance.lang =
-      item.language;
+    if (
+      item.audioUrl
+    ) {
 
-    utterance.rate =
-      item.language === "zh-TW"
-        ? 0.9
-        : 0.85;
+      const audio =
+        new Audio(item.audioUrl);
+
+      currentAudio =
+        audio;
 
 
-    utterance.onend =
-      () => {
+      audio.onended =
+        () => {
 
-        if (
-          generation !==
-          playAllGeneration
-        ) {
+          if (
+            currentAudio === audio
+          ) {
 
-          return;
+            currentAudio = null;
 
-        }
+          }
 
-        setTimeout(
-          playNext,
-          150
+          if (!isCancelled()) {
+
+            setTimeout(
+              playNext,
+              150
+            );
+
+          }
+
+        };
+
+
+      audio.onerror =
+        () => {
+
+          if (
+            currentAudio === audio
+          ) {
+
+            currentAudio = null;
+
+          }
+
+          if (!isCancelled()) {
+
+            playSpeechItem();
+
+          }
+
+        };
+
+
+      audio.play()
+        .catch(() => {
+
+          if (
+            currentAudio === audio
+          ) {
+
+            currentAudio = null;
+
+          }
+
+          if (!isCancelled()) {
+
+            playSpeechItem();
+
+          }
+
+        });
+
+
+      return;
+
+    }
+
+
+    playSpeechItem();
+
+
+    function playSpeechItem() {
+
+      if (isCancelled()) {
+
+        return;
+
+      }
+
+
+      const utterance =
+        new SpeechSynthesisUtterance(
+          item.text
         );
 
-      };
+
+      utterance.lang =
+        item.language;
 
 
-    utterance.onerror =
-      () => {
-
-        if (
-          generation !==
-          playAllGeneration
-        ) {
-
-          return;
-
-        }
-
-        playNext();
-
-      };
+      utterance.rate =
+        item.language === "zh-TW"
+          ? 0.9
+          : 0.85;
 
 
-    currentUtterance =
-      utterance;
+      utterance.onend =
+        () => {
 
-    window.speechSynthesis.speak(
-      utterance
-    );
+          if (isCancelled()) {
+
+            return;
+
+          }
+
+          if (
+            currentUtterance ===
+            utterance
+          ) {
+
+            currentUtterance = null;
+
+          }
+
+          setTimeout(
+            playNext,
+            150
+          );
+
+        };
+
+
+      utterance.onerror =
+        () => {
+
+          if (isCancelled()) {
+
+            return;
+
+          }
+
+          if (
+            currentUtterance ===
+            utterance
+          ) {
+
+            currentUtterance = null;
+
+          }
+
+          setTimeout(
+            playNext,
+            100
+          );
+
+        };
+
+
+      currentUtterance =
+        utterance;
+
+
+      window.speechSynthesis.speak(
+        utterance
+      );
+
+    }
 
   }
 
@@ -2473,6 +2909,7 @@ async function checkUser() {
   } =
     await supabaseClient.auth
       .getSession();
+
 
   if (session?.user) {
 
@@ -2503,6 +2940,7 @@ supabaseClient.auth.onAuthStateChange(
       return;
 
     }
+
 
     if (session?.user) {
 
@@ -2655,3 +3093,4 @@ if (searchInput) {
 ========================================================= */
 
 checkUser();
+
