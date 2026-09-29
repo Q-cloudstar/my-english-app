@@ -4931,12 +4931,47 @@ function showQuizWrongAnswers() {
 /* =========================================================
    初始化複習測驗
 ========================================================= */
-function createQuizUI() {
 
-  console.log("開始建立測驗 UI");
-  console.log("appSection =", appSection);
+function initQuiz() {
 
-  if (document.getElementById("quizEntryBtn")) {
+  if (
+    typeof createQuizUI !== "function"
+  ) {
+    console.error(
+      "找不到 createQuizUI()"
+    );
     return;
   }
-createQuizUI();
+
+  if (
+    typeof appSection === "undefined" ||
+    !appSection
+  ) {
+    console.error(
+      "找不到 appSection，無法建立複習測驗"
+    );
+    return;
+  }
+
+  createQuizUI();
+}
+
+
+/* =========================================================
+   啟動複習測驗
+========================================================= */
+
+if (
+  document.readyState === "loading"
+) {
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    initQuiz
+  );
+
+} else {
+
+  initQuiz();
+
+}
