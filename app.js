@@ -533,4 +533,27 @@ async function checkUser() {
    Auth 狀態監聽
 ========================================================= */
 
-supabaseClient.auth.onA
+supabaseClient.auth.onAuthStateChange(
+  async (event, session) => {
+
+    if (session?.user) {
+
+      await showCurrentUser(
+        session.user
+      );
+
+    } else {
+
+      showAuth();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   啟動 App
+========================================================= */
+
+checkUser();
