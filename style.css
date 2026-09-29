@@ -461,3 +461,72 @@ input:focus {
     flex-direction: column;
   }
 }
+/* ========================================
+   我的筆記區
+======================================== */
+
+.notes-block {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.notes-input {
+  display: block;
+  width: 100%;
+  min-height: 180px;
+  box-sizing: border-box;
+
+  padding: 14px 16px;
+  margin-top: 8px;
+
+  font-size: 16px;
+  line-height: 1.7;
+  font-family: inherit;
+
+  resize: none;
+
+  border: 1px solid #ccc;
+  border-radius: 10px;
+
+  background: #fff;
+  color: #333;
+
+  overflow-y: auto;
+}
+
+.notes-input:focus {
+  outline: none;
+  border-color: #6b8afd;
+}
+
+.notes-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.notes-message {
+  min-height: 24px;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+/* 電腦版 */
+@media (min-width: 768px) {
+
+  .notes-input {
+    min-height: 220px;
+    font-size: 17px;
+  }
+
+}
+
+/* 手機版 */
+@media (max-width: 767px) {
+
+  .notes-input {
+    min-height: 180px;
+    font-size: 16px;
+  }
+
+}
