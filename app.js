@@ -1378,7 +1378,13 @@ function renderWordDetail(word) {
     <h2>
       ${escapeHtml(word.word)}
     </h2>
-
+<button
+      id="detailWordAudioBtn"
+      class="secondary-btn"
+      type="button"
+    >
+      🔊 聽單字發音
+    </button>
 
     ${
       word.phonetic
