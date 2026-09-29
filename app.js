@@ -18,12 +18,14 @@ const supabaseClient = supabase.createClient(
 const authSection = document.getElementById("authSection");
 const appSection = document.getElementById("appSection");
 
-const usernameInput = document.getElementById("usernameInput");
-const passwordInput = document.getElementById("passwordInput");
+const usernameInput = document.getElementById("username");
+const passwordInput = document.getElementById("password");
 
 const loginBtn = document.getElementById("loginBtn");
 const signupBtn = document.getElementById("signupBtn");
 const logoutBtn = document.getElementById("logoutBtn");
+
+const authMessage = document.getElementById("authMessage");
 
 const userName = document.getElementById("userName");
 
@@ -31,20 +33,26 @@ const newWordInput = document.getElementById("newWordInput");
 const addWordBtn = document.getElementById("addWordBtn");
 const addWordMessage = document.getElementById("addWordMessage");
 
-const wordSearchInput = document.getElementById("wordSearchInput");
+const searchInput = document.getElementById("searchInput");
+const searchBtn = document.getElementById("searchBtn");
 
 const wordList = document.getElementById("wordList");
-
 const wordDetail = document.getElementById("wordDetail");
 
-const backToWordsBtn = document.getElementById("backToWordsBtn");
+
+/* =========================================================
+   常數
+========================================================= */
+
+const INTERNAL_AUTH_DOMAIN = "my-english-app.invalid";
+
+const noteSeparator =
+  "\n\n--- 中文筆記 ---\n\n";
 
 
 /* =========================================================
    使用者名稱 → Supabase 隱藏 Email
 ========================================================= */
-
-const INTERNAL_AUTH_DOMAIN = "my-english-app.invalid";
 
 function usernameToInternalEmail(username) {
 
@@ -63,7 +71,7 @@ function usernameToInternalEmail(username) {
 
 
 /* =========================================================
-   使用者名稱驗證
+   使用者名稱格式
 ========================================================= */
 
 function isValidUsername(username) {
@@ -75,21 +83,43 @@ function isValidUsername(username) {
 
 
 /* =========================================================
-   顯示登入區
+   HTML 安全處理
+========================================================= */
+
+function escapeHtml(value) {
+
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+}
+
+
+/* =========================================================
+   顯示登入畫面
 ========================================================= */
 
 function showAuth() {
 
   if (authSection) {
+    authSection.classList.remove("hidden");
     authSection.style.display = "";
   }
 
   if (appSection) {
-    appSection.style.display = "none";
+    appSection.classList.add("hidden");
+    appSection.style.display = "";
   }
 
   if (wordDetail) {
-    wordDetail.style.display = "none";
+    wordDetail.classList.add("hidden");
   }
 
 }
@@ -102,18 +132,52 @@ function showAuth() {
 async function showApp() {
 
   if (authSection) {
-    authSection.style.display = "none";
+    authSection.classList.add("hidden");
+    authSection.style.display = "";
   }
 
   if (appSection) {
+    appSection.classList.remove("hidden");
     appSection.style.display = "";
   }
 
   if (wordDetail) {
-    wordDetail.style.display = "none";
+    wordDetail.classList.add("hidden");
   }
 
   await loadWords();
+
+}
+
+
+/* =========================================================
+   顯示登入訊息
+========================================================= */
+
+function showAuthMessage(message, isError = true) {
+
+  if (!authMessage) return;
+
+  authMessage.textContent = message;
+
+  authMessage.style.color =
+    isError ? "#d9534f" : "";
+
+}
+
+
+/* =========================================================
+   顯示新增單字訊息
+========================================================= */
+
+function showAddWordMessage(message, isError = false) {
+
+  if (!addWordMessage) return;
+
+  addWordMessage.textContent = message;
+
+  addWordMessage.style.color =
+    isError ? "#d9534f" : "";
 
 }
 
@@ -129,7 +193,7 @@ async function getProfile(userId) {
     error
   } = await supabaseClient
     .from("profiles")
-    .select("id, username")
+    .select("username")
     .eq("id", userId)
     .maybeSingle();
 
@@ -154,6 +218,11 @@ async function getProfile(userId) {
 
 async function showCurrentUser(user) {
 
+  if (!user) {
+    showAuth();
+    return;
+  }
+
   const profile =
     await getProfile(user.id);
 
@@ -161,7 +230,8 @@ async function showCurrentUser(user) {
 
     userName.textContent =
       profile?.username ||
-      "使用者";
+      user.user_metadata?.username ||
+      "學習者";
 
   }
 
@@ -182,10 +252,21 @@ async function signup() {
   const password =
     passwordInput?.value || "";
 
+  showAuthMessage("");
+
+  if (!username) {
+
+    showAuthMessage(
+      "請輸入帳號名稱。"
+    );
+
+    return;
+  }
+
   if (!isValidUsername(username)) {
 
-    alert(
-      "帳號名稱請使用 2～30 個中文字、英文字母、數字、底線或連字號。"
+    showAuthMessage(
+      "帳號名稱需為 2～30 個字，可使用中文、英文、數字、底線或連字號。"
     );
 
     return;
@@ -193,15 +274,12 @@ async function signup() {
 
   if (password.length < 6) {
 
-    alert(
+    showAuthMessage(
       "密碼至少需要 6 個字元。"
     );
 
     return;
   }
-
-  const email =
-    usernameToInternalEmail(username);
 
   if (signupBtn) {
     signupBtn.disabled = true;
@@ -209,23 +287,49 @@ async function signup() {
 
   try {
 
+    const email =
+      usernameToInternalEmail(username);
+
     const {
       data,
       error
     } = await supabaseClient.auth.signUp({
       email,
-      password
+      password,
+      options: {
+        data: {
+          username
+        }
+      }
     });
 
     if (error) {
-      throw error;
+
+      console.error(
+        "註冊失敗：",
+        error
+      );
+
+      showAuthMessage(
+        "註冊失敗：" +
+        error.message
+      );
+
+      return;
     }
 
     if (!data?.user) {
-      throw new Error(
-        "註冊失敗，沒有取得使用者資料。"
+
+      showAuthMessage(
+        "註冊沒有完成，請再試一次。"
       );
+
+      return;
     }
+
+    /*
+      建立 profile
+    */
 
     const {
       error: profileError
@@ -236,39 +340,39 @@ async function signup() {
         username
       });
 
-    if (profileError) {
+    if (
+      profileError &&
+      !profileError.message?.includes("duplicate")
+    ) {
 
       console.error(
-        "建立使用者資料失敗：",
+        "建立 profile 失敗：",
         profileError
       );
 
-      alert(
-        "帳號已建立，但使用者資料建立失敗。\n\n" +
-        profileError.message
+      showAuthMessage(
+        "帳號已建立，但使用者資料建立失敗。"
       );
 
       return;
     }
 
-    alert(
-      "註冊成功！現在可以登入了。"
+    showAuthMessage(
+      "註冊成功！正在登入……",
+      false
     );
 
-    if (passwordInput) {
-      passwordInput.value = "";
-    }
+    await showCurrentUser(data.user);
 
   } catch (error) {
 
     console.error(
-      "註冊失敗：",
+      "註冊發生錯誤：",
       error
     );
 
-    alert(
-      "註冊失敗：" +
-      (error?.message || "未知錯誤")
+    showAuthMessage(
+      "註冊失敗，請稍後再試。"
     );
 
   } finally {
@@ -294,32 +398,25 @@ async function login() {
   const password =
     passwordInput?.value || "";
 
-  if (!isValidUsername(username)) {
+  showAuthMessage("");
 
-    alert(
-      "請輸入正確的帳號名稱。"
+  if (!username || !password) {
+
+    showAuthMessage(
+      "請輸入帳號名稱和密碼。"
     );
 
     return;
   }
-
-  if (!password) {
-
-    alert(
-      "請輸入密碼。"
-    );
-
-    return;
-  }
-
-  const email =
-    usernameToInternalEmail(username);
 
   if (loginBtn) {
     loginBtn.disabled = true;
   }
 
   try {
+
+    const email =
+      usernameToInternalEmail(username);
 
     const {
       data,
@@ -331,26 +428,41 @@ async function login() {
       });
 
     if (error) {
-      throw error;
-    }
 
-    if (data?.user) {
-
-      await showCurrentUser(
-        data.user
+      console.error(
+        "登入失敗：",
+        error
       );
 
+      showAuthMessage(
+        "登入失敗：帳號名稱或密碼不正確"
+      );
+
+      return;
     }
+
+    if (!data?.user) {
+
+      showAuthMessage(
+        "登入失敗，請再試一次。"
+      );
+
+      return;
+    }
+
+    await showCurrentUser(
+      data.user
+    );
 
   } catch (error) {
 
     console.error(
-      "登入失敗：",
+      "登入發生錯誤：",
       error
     );
 
-    alert(
-      "登入失敗：帳號名稱或密碼不正確"
+    showAuthMessage(
+      "登入失敗，請稍後再試。"
     );
 
   } finally {
@@ -386,6 +498,14 @@ async function logout() {
     return;
   }
 
+  if (usernameInput) {
+    usernameInput.value = "";
+  }
+
+  if (passwordInput) {
+    passwordInput.value = "";
+  }
+
   showAuth();
 
 }
@@ -404,6 +524,7 @@ async function loadWords() {
   } = await supabaseClient.auth.getUser();
 
   if (!user) {
+    showAuth();
     return;
   }
 
@@ -421,6 +542,7 @@ async function loadWords() {
       definition_en,
       example_en,
       example_zh,
+      notes,
       audio_url,
       created_at
     `)
@@ -438,8 +560,11 @@ async function loadWords() {
 
     if (wordList) {
 
-      wordList.innerHTML =
-        `<p>載入單字失敗：${escapeHtml(error.message)}</p>`;
+      wordList.innerHTML = `
+        <p class="message">
+          載入單字失敗，請重新整理頁面。
+        </p>
+      `;
 
     }
 
@@ -452,35 +577,20 @@ async function loadWords() {
 
 
 /* =========================================================
-   HTML Escape
-========================================================= */
-
-function escapeHtml(value) {
-
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-
-}
-
-
-/* =========================================================
    顯示單字列表
 ========================================================= */
 
 function displayWords(words) {
 
-  if (!wordList) {
-    return;
-  }
+  if (!wordList) return;
 
-  if (!words.length) {
+  if (!words || words.length === 0) {
 
-    wordList.innerHTML =
-      `<p class="empty-message">目前還沒有單字。</p>`;
+    wordList.innerHTML = `
+      <p class="message">
+        目前還沒有單字。
+      </p>
+    `;
 
     return;
   }
@@ -489,78 +599,93 @@ function displayWords(words) {
     words.map(word => {
 
       return `
-        <div class="word-item"
-             data-word-id="${escapeHtml(word.id)}">
+        <div
+          class="word-item"
+          data-word-id="${escapeHtml(word.id)}"
+          style="
+            cursor:pointer;
+            padding:12px;
+            margin:8px 0;
+            border-radius:10px;
+            border:1px solid #e5e5e5;
+          "
+        >
 
-          <div class="word-item-main">
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:10px;
+            "
+          >
 
-            <div class="word-item-word">
-              ${escapeHtml(word.word)}
+            <div>
+
+              <strong>
+                ${escapeHtml(word.word)}
+              </strong>
+
+              ${
+                word.phonetic
+                  ? `
+                    <span
+                      style="
+                        margin-left:8px;
+                        color:#777;
+                      "
+                    >
+                      ${escapeHtml(word.phonetic)}
+                    </span>
+                  `
+                  : ""
+              }
+
             </div>
 
-            ${
-              word.chinese_meaning
-                ? `
-                  <div class="word-item-meaning">
-                    ${escapeHtml(word.chinese_meaning)}
-                  </div>
-                `
-                : ""
-            }
+            <span
+              style="
+                color:#777;
+                font-size:13px;
+              "
+            >
+              學習
+            </span>
 
           </div>
 
-          <button
-            type="button"
-            class="learn-again-btn"
-            data-word-id="${escapeHtml(word.id)}"
-          >
-            再學一次
-          </button>
+          ${
+            word.chinese_meaning
+              ? `
+                <div
+                  style="
+                    margin-top:5px;
+                    color:#666;
+                  "
+                >
+                  ${escapeHtml(word.chinese_meaning)}
+                </div>
+              `
+              : ""
+          }
 
         </div>
       `;
 
     }).join("");
 
-  wordList
+  document
     .querySelectorAll(".word-item")
     .forEach(item => {
 
       item.addEventListener(
         "click",
-        event => {
+        () => {
 
-          if (
-            event.target.closest(
-              ".learn-again-btn"
-            )
-          ) {
-            return;
-          }
+          const id =
+            item.dataset.wordId;
 
-          openWordDetail(
-            item.dataset.wordId
-          );
-
-        }
-      );
-
-    });
-
-  wordList
-    .querySelectorAll(".learn-again-btn")
-    .forEach(button => {
-
-      button.addEventListener(
-        "click",
-        event => {
-
-          event.stopPropagation();
-
-          openWordDetail(
-            button.dataset.wordId
-          );
+          openWordDetail(id);
 
         }
       );
@@ -577,7 +702,7 @@ function displayWords(words) {
 async function searchWords() {
 
   const keyword =
-    wordSearchInput?.value.trim() || "";
+    searchInput?.value.trim() || "";
 
   const {
     data: {
@@ -601,6 +726,7 @@ async function searchWords() {
         definition_en,
         example_en,
         example_zh,
+        notes,
         audio_url,
         created_at
       `)
@@ -611,9 +737,11 @@ async function searchWords() {
 
   if (keyword) {
 
-    query = query.or(
-      `word.ilike.%${keyword}%,chinese_meaning.ilike.%${keyword}%`
-    );
+    query =
+      query.ilike(
+        "word",
+        `%${keyword}%`
+      );
 
   }
 
@@ -638,18 +766,18 @@ async function searchWords() {
 
 
 /* =========================================================
-   Audio 狀態
+   語音 / Audio
 ========================================================= */
 
 let currentAudio = null;
 
-let speechUtterance = null;
+let currentUtterance = null;
 
 let playAllGeneration = 0;
 
 
 /* =========================================================
-   停止所有音訊
+   停止所有語音
 ========================================================= */
 
 function stopAllAudio() {
@@ -661,26 +789,26 @@ function stopAllAudio() {
     try {
       currentAudio.pause();
       currentAudio.currentTime = 0;
-    } catch (error) {
-      console.warn(error);
-    }
+    } catch (e) {}
 
     currentAudio = null;
   }
 
-  if ("speechSynthesis" in window) {
+  if (
+    "speechSynthesis" in window
+  ) {
 
     window.speechSynthesis.cancel();
 
   }
 
-  speechUtterance = null;
+  currentUtterance = null;
 
 }
 
 
 /* =========================================================
-   播放音檔
+   播放 Audio URL
 ========================================================= */
 
 function playAudioUrl(
@@ -691,57 +819,51 @@ function playAudioUrl(
 
   stopAllAudio();
 
-  if (!url) {
+  if (url) {
 
-    if (fallbackText) {
-      speakText(
-        fallbackText,
-        language
-      );
-    }
+    const audio =
+      new Audio(url);
+
+    currentAudio = audio;
+
+    audio.play()
+      .catch(error => {
+
+        console.warn(
+          "音檔播放失敗：",
+          error
+        );
+
+        currentAudio = null;
+
+        if (fallbackText) {
+
+          speakText(
+            fallbackText,
+            language
+          );
+
+        }
+
+      });
 
     return;
   }
 
-  const audio =
-    new Audio(url);
+  if (fallbackText) {
 
-  currentAudio = audio;
+    speakText(
+      fallbackText,
+      language
+    );
 
-  audio.play()
-    .catch(error => {
-
-      console.warn(
-        "音檔播放失敗，改用語音播放：",
-        error
-      );
-
-      currentAudio = null;
-
-      if (fallbackText) {
-
-        speakText(
-          fallbackText,
-          language
-        );
-
-      }
-
-    });
-
-  audio.onended = () => {
-
-    if (currentAudio === audio) {
-      currentAudio = null;
-    }
-
-  };
+  }
 
 }
 
 
 /* =========================================================
-   語音播放
+   語音朗讀
 ========================================================= */
 
 function speakText(
@@ -749,33 +871,33 @@ function speakText(
   language = "en-US"
 ) {
 
-  if (!text) {
+  if (!text) return;
+
+  if (
+    !"speechSynthesis" in window
+  ) {
+
+    alert(
+      "你的瀏覽器不支援語音朗讀。"
+    );
+
     return;
   }
 
   stopAllAudio();
 
-  if (!("speechSynthesis" in window)) {
-
-    alert(
-      "你的瀏覽器不支援語音播放。"
-    );
-
-    return;
-  }
-
   const utterance =
-    new SpeechSynthesisUtterance(
-      text
-    );
+    new SpeechSynthesisUtterance(text);
 
   utterance.lang = language;
 
-  utterance.rate = 0.9;
+  utterance.rate =
+    language === "zh-TW"
+      ? 0.9
+      : 0.85;
 
-  utterance.pitch = 1;
-
-  speechUtterance = utterance;
+  currentUtterance =
+    utterance;
 
   window.speechSynthesis.speak(
     utterance
@@ -785,7 +907,7 @@ function speakText(
 
 
 /* =========================================================
-   英文播放
+   英文語音
 ========================================================= */
 
 function playEnglish(text) {
@@ -799,7 +921,7 @@ function playEnglish(text) {
 
 
 /* =========================================================
-   中文播放
+   中文語音
 ========================================================= */
 
 function playChinese(text) {
@@ -813,7 +935,7 @@ function playChinese(text) {
 
 
 /* =========================================================
-   Dictionary API
+   查詢字典
 ========================================================= */
 
 async function lookupWord(word) {
@@ -821,15 +943,14 @@ async function lookupWord(word) {
   const {
     data,
     error
-  } =
-    await supabaseClient.functions.invoke(
-      "lookup-word",
-      {
-        body: {
-          word
-        }
+  } = await supabaseClient.functions.invoke(
+    "lookup-word",
+    {
+      body: {
+        word
       }
-    );
+    }
+  );
 
   if (error) {
 
@@ -865,25 +986,20 @@ async function addWord() {
 
   if (!word) {
 
-    if (addWordMessage) {
-
-      addWordMessage.textContent =
-        "請先輸入單字。";
-
-    }
+    showAddWordMessage(
+      "請輸入英文單字或片語。",
+      true
+    );
 
     return;
   }
 
+  showAddWordMessage(
+    "正在查詢單字資料……"
+  );
+
   if (addWordBtn) {
     addWordBtn.disabled = true;
-  }
-
-  if (addWordMessage) {
-
-    addWordMessage.textContent =
-      "正在查詢單字資料……";
-
   }
 
   try {
@@ -892,71 +1008,117 @@ async function addWord() {
       data: {
         user
       }
-    } =
-      await supabaseClient.auth.getUser();
+    } = await supabaseClient.auth.getUser();
 
     if (!user) {
 
-      throw new Error(
-        "請先登入。"
+      showAddWordMessage(
+        "請先登入。",
+        true
       );
 
+      return;
     }
 
-    const result =
+    /*
+      查詢字典
+    */
+
+    const dictionary =
       await lookupWord(word);
 
-    const insertData = {
+    /*
+      避免同一個使用者重複加入
+    */
 
-      user_id: user.id,
+    const {
+      data: existing
+    } = await supabaseClient
+      .from("words")
+      .select("id")
+      .eq("user_id", user.id)
+      .ilike("word", word)
+      .maybeSingle();
 
-      word:
-        result.word ||
-        word.toLowerCase(),
+    if (existing) {
 
-      phonetic:
-        result.phonetic || "",
+      showAddWordMessage(
+        "這個單字已經在你的單字庫裡了。",
+        true
+      );
 
-      part_of_speech:
-        result.part_of_speech || "",
+      return;
+    }
 
-      chinese_meaning:
-        result.chinese_meaning || "",
-
-      definition_en:
-        result.definition_en || "",
-
-      example_en:
-        result.example_en || "",
-
-      example_zh:
-        result.example_zh || "",
-
-      audio_url:
-        result.audio || ""
-
-    };
+    /*
+      寫入資料庫
+    */
 
     const {
       error
-    } =
-      await supabaseClient
-        .from("words")
-        .insert(insertData);
+    } = await supabaseClient
+      .from("words")
+      .insert({
+        user_id: user.id,
+
+        word:
+          dictionary?.word ||
+          word,
+
+        phonetic:
+          dictionary?.phonetic ||
+          "",
+
+        part_of_speech:
+          dictionary?.part_of_speech ||
+          "",
+
+        chinese_meaning:
+          dictionary?.chinese_meaning ||
+          "",
+
+        definition_en:
+          dictionary?.definition_en ||
+          "",
+
+        example_en:
+          dictionary?.example_en ||
+          "",
+
+        example_zh:
+          dictionary?.example_zh ||
+          "",
+
+        audio_url:
+          dictionary?.audio_url ||
+          "",
+
+        notes:
+          ""
+      });
 
     if (error) {
-      throw error;
+
+      console.error(
+        "儲存單字失敗：",
+        error
+      );
+
+      showAddWordMessage(
+        "儲存失敗：" +
+        error.message,
+        true
+      );
+
+      return;
     }
+
+    showAddWordMessage(
+      `「${word}」已加入你的單字庫。`
+    );
 
     if (newWordInput) {
       newWordInput.value = "";
-    }
-
-    if (addWordMessage) {
-
-      addWordMessage.textContent =
-        "新增成功！";
-
     }
 
     await loadWords();
@@ -964,17 +1126,14 @@ async function addWord() {
   } catch (error) {
 
     console.error(
-      "新增單字失敗：",
+      "新增單字錯誤：",
       error
     );
 
-    if (addWordMessage) {
-
-      addWordMessage.textContent =
-        "新增失敗：" +
-        (error?.message || "未知錯誤");
-
-    }
+    showAddWordMessage(
+      "查詢單字資料失敗，請稍後再試。",
+      true
+    );
 
   } finally {
 
@@ -988,45 +1147,40 @@ async function addWord() {
 
 
 /* =========================================================
-   開啟單字詳細頁
+   開啟單字詳細資料
 ========================================================= */
 
 async function openWordDetail(wordId) {
-
-  stopAllAudio();
 
   const {
     data: {
       user
     }
-  } =
-    await supabaseClient.auth.getUser();
+  } = await supabaseClient.auth.getUser();
 
-  if (!user) {
-    return;
-  }
+  if (!user) return;
 
   const {
     data: word,
     error
-  } =
-    await supabaseClient
-      .from("words")
-      .select(`
-        id,
-        word,
-        phonetic,
-        part_of_speech,
-        chinese_meaning,
-        definition_en,
-        example_en,
-        example_zh,
-        audio_url,
-        notes
-      `)
-      .eq("id", wordId)
-      .eq("user_id", user.id)
-      .single();
+  } = await supabaseClient
+    .from("words")
+    .select(`
+      id,
+      word,
+      phonetic,
+      part_of_speech,
+      chinese_meaning,
+      definition_en,
+      example_en,
+      example_zh,
+      notes,
+      audio_url,
+      created_at
+    `)
+    .eq("id", wordId)
+    .eq("user_id", user.id)
+    .single();
 
   if (error) {
 
@@ -1044,365 +1198,460 @@ async function openWordDetail(wordId) {
 
 
 /* =========================================================
-   回到單字列表
-========================================================= */
-
-function closeWordDetail() {
-
-  stopAllAudio();
-
-  if (wordDetail) {
-    wordDetail.style.display = "none";
-  }
-
-  if (wordList) {
-    wordList.style.display = "";
-  }
-
-  const wordContainer =
-    wordList?.parentElement;
-
-  if (wordContainer) {
-    wordContainer.style.display = "";
-  }
-
-}
-
-
-/* =========================================================
-   顯示單字詳細資料
+   渲染詳細資料
 ========================================================= */
 
 function renderWordDetail(word) {
 
-  if (!wordDetail) {
-    return;
-  }
+  if (!wordDetail) return;
 
-  stopAllAudio();
+  wordDetail.classList.remove("hidden");
 
-  if (wordList) {
-    wordList.style.display = "none";
-  }
-
-  const wordContainer =
-    wordList?.parentElement;
-
-  if (wordContainer) {
-    wordContainer.style.display = "none";
-  }
-
-  wordDetail.style.display = "";
-
-  const existingNotes =
-    word.notes || "";
-
-  const noteSeparator =
-    "\n\n--- 中文筆記 ---\n\n";
+  /*
+    notes 分開成英文 / 中文
+  */
 
   let englishNotes = "";
   let chineseNotes = "";
 
-  if (
-    existingNotes.includes(
-      noteSeparator
-    )
-  ) {
+  if (word.notes) {
 
     const parts =
-      existingNotes.split(
-        noteSeparator
-      );
+      word.notes.split(noteSeparator);
 
     englishNotes =
       parts[0] || "";
 
     chineseNotes =
-      parts.slice(1).join(
-        noteSeparator
-      ) || "";
-
-  } else {
-
-    englishNotes =
-      existingNotes;
+      parts[1] || "";
 
   }
 
   wordDetail.innerHTML = `
 
-    <div class="word-detail-inner">
+    <div
+      style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:10px;
+        margin-bottom:15px;
+      "
+    >
 
-      <h2>
-        ${escapeHtml(word.word)}
-      </h2>
+      <button
+        id="backToWordsBtn"
+        class="secondary-btn"
+      >
+        ← 回到我的單字
+      </button>
 
-      ${
-        word.phonetic
-          ? `
-            <p class="word-phonetic">
-              ${escapeHtml(word.phonetic)}
-            </p>
-          `
-          : ""
-      }
+      <button
+        id="deleteWordBtn"
+        class="logout-btn"
+      >
+        🗑 刪除
+      </button>
 
-      ${
-        word.part_of_speech
-          ? `
-            <p class="word-pos">
-              ${escapeHtml(word.part_of_speech)}
-            </p>
-          `
-          : ""
-      }
+    </div>
 
-      <div class="detail-section">
+
+    <h2>
+      ${escapeHtml(word.word)}
+    </h2>
+
+
+    ${
+      word.phonetic
+        ? `
+          <p>
+            <strong>音標：</strong>
+            ${escapeHtml(word.phonetic)}
+          </p>
+        `
+        : ""
+    }
+
+
+    ${
+      word.part_of_speech
+        ? `
+          <p>
+            <strong>詞性：</strong>
+            ${escapeHtml(word.part_of_speech)}
+          </p>
+        `
+        : ""
+    }
+
+
+    ${
+      word.audio_url
+        ? `
+          <div style="margin:12px 0;">
+            <button
+              id="wordAudioBtn"
+              class="secondary-btn"
+            >
+              🔊 聽發音
+            </button>
+          </div>
+        `
+        : ""
+    }
+
+
+    <hr>
+
+
+    <div
+      class="detail-section"
+      style="margin:15px 0;"
+    >
+
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:10px;
+        "
+      >
 
         <h3>中文意思</h3>
 
-        <div class="detail-audio-row">
-
-          <div class="detail-text">
-            ${escapeHtml(
-              word.chinese_meaning ||
-              "暫無資料"
-            )}
-          </div>
-
-          ${
-            word.chinese_meaning
-              ? `
-                <button
-                  type="button"
-                  id="meaningAudioBtn"
-                >
-                  🔊
-                </button>
-              `
-              : ""
-          }
-
-        </div>
+        ${
+          word.chinese_meaning
+            ? `
+              <button
+                id="chineseMeaningAudioBtn"
+                class="secondary-btn"
+              >
+                🔊
+              </button>
+            `
+            : ""
+        }
 
       </div>
 
+      <p>
+        ${
+          escapeHtml(
+            word.chinese_meaning ||
+            "尚無資料"
+          )
+        }
+      </p>
 
-      <div class="detail-section">
+    </div>
 
-        <h3>英文定義</h3>
 
-        <div class="detail-audio-row">
+    <div
+      class="detail-section"
+      style="margin:15px 0;"
+    >
 
-          <div class="detail-text">
-            ${escapeHtml(
-              word.definition_en ||
-              "暫無資料"
-            )}
-          </div>
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:10px;
+        "
+      >
 
-          ${
-            word.definition_en
-              ? `
-                <button
-                  type="button"
-                  id="definitionAudioBtn"
-                >
-                  🔊
-                </button>
-              `
-              : ""
-          }
+        <h3>English Definition</h3>
 
-        </div>
+        ${
+          word.definition_en
+            ? `
+              <button
+                id="definitionAudioBtn"
+                class="secondary-btn"
+              >
+                🔊
+              </button>
+            `
+            : ""
+        }
 
       </div>
 
+      <p>
+        ${
+          escapeHtml(
+            word.definition_en ||
+            "No definition available."
+          )
+        }
+      </p>
 
-      <div class="detail-section">
+    </div>
+
+
+    <div
+      class="detail-section"
+      style="margin:15px 0;"
+    >
+
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:10px;
+        "
+      >
 
         <h3>英文例句</h3>
 
-        <div class="detail-audio-row">
-
-          <div class="detail-text">
-            ${escapeHtml(
-              word.example_en ||
-              "暫無資料"
-            )}
-          </div>
-
-          ${
-            word.example_en
-              ? `
-                <button
-                  type="button"
-                  id="exampleEnAudioBtn"
-                >
-                  🔊
-                </button>
-              `
-              : ""
-          }
-
-        </div>
+        ${
+          word.example_en
+            ? `
+              <button
+                id="exampleEnAudioBtn"
+                class="secondary-btn"
+              >
+                🔊
+              </button>
+            `
+            : ""
+        }
 
       </div>
 
+      <p>
+        ${
+          escapeHtml(
+            word.example_en ||
+            "尚無英文例句"
+          )
+        }
+      </p>
 
-      <div class="detail-section">
+    </div>
+
+
+    <div
+      class="detail-section"
+      style="margin:15px 0;"
+    >
+
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:10px;
+        "
+      >
 
         <h3>中文例句</h3>
 
-        <div class="detail-audio-row">
-
-          <div class="detail-text">
-            ${escapeHtml(
-              word.example_zh ||
-              "暫無資料"
-            )}
-          </div>
-
-          ${
-            word.example_zh
-              ? `
-                <button
-                  type="button"
-                  id="exampleZhAudioBtn"
-                >
-                  🔊
-                </button>
-              `
-              : ""
-          }
-
-        </div>
+        ${
+          word.example_zh
+            ? `
+              <button
+                id="exampleZhAudioBtn"
+                class="secondary-btn"
+              >
+                🔊
+              </button>
+            `
+            : ""
+        }
 
       </div>
 
-
-      <div class="detail-section">
-
-        <h3>我的英文筆記</h3>
-
-        <div class="note-audio-row">
-
-          <textarea
-            id="englishNotesInput"
-            rows="4"
-            placeholder="輸入自己的英文筆記……"
-          ></textarea>
-
-          <button
-            type="button"
-            id="englishNoteAudioBtn"
-          >
-            🔊
-          </button>
-
-        </div>
-
-      </div>
-
-
-      <div class="detail-section">
-
-        <h3>我的中文筆記</h3>
-
-        <div class="note-audio-row">
-
-          <textarea
-            id="chineseNotesInput"
-            rows="4"
-            placeholder="輸入自己的中文筆記……"
-          ></textarea>
-
-          <button
-            type="button"
-            id="chineseNoteAudioBtn"
-          >
-            🔊
-          </button>
-
-        </div>
-
-      </div>
-
-
-      <div class="detail-actions">
-
-        <button
-          type="button"
-          id="saveNotesBtn"
-        >
-          💾 儲存筆記
-        </button>
-
-        <button
-          type="button"
-          id="playAllBtn"
-        >
-          ▶️ 全部播放
-        </button>
-
-        <button
-          type="button"
-          id="deleteWordBtn"
-        >
-          🗑️ 刪除單字
-        </button>
-
-        <button
-          type="button"
-          id="backToWordsDetailBtn"
-        >
-          ← 回到我的單字
-        </button>
-
-      </div>
+      <p>
+        ${
+          escapeHtml(
+            word.example_zh ||
+            "尚無中文例句"
+          )
+        }
+      </p>
 
     </div>
+
+
+    <hr>
+
+
+    <div
+      class="detail-section"
+      style="margin:15px 0;"
+    >
+
+      <h3>📝 英文筆記</h3>
+
+      <textarea
+        id="englishNotesInput"
+        rows="4"
+        style="
+          width:100%;
+          box-sizing:border-box;
+          margin-top:8px;
+        "
+        placeholder="輸入英文筆記"
+      >${escapeHtml(englishNotes)}</textarea>
+
+      ${
+        englishNotes
+          ? `
+            <button
+              id="englishNotesAudioBtn"
+              class="secondary-btn"
+              style="margin-top:6px;"
+            >
+              🔊 朗讀英文筆記
+            </button>
+          `
+          : ""
+      }
+
+    </div>
+
+
+    <div
+      class="detail-section"
+      style="margin:15px 0;"
+    >
+
+      <h3>📝 中文筆記</h3>
+
+      <textarea
+        id="chineseNotesInput"
+        rows="4"
+        style="
+          width:100%;
+          box-sizing:border-box;
+          margin-top:8px;
+        "
+        placeholder="輸入中文筆記"
+      >${escapeHtml(chineseNotes)}</textarea>
+
+      ${
+        chineseNotes
+          ? `
+            <button
+              id="chineseNotesAudioBtn"
+              class="secondary-btn"
+              style="margin-top:6px;"
+            >
+              🔊 朗讀中文筆記
+            </button>
+          `
+          : ""
+      }
+
+    </div>
+
+
+    <div
+      style="
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        margin-top:20px;
+      "
+    >
+
+      <button
+        id="saveNotesBtn"
+        class="primary-btn"
+      >
+        💾 儲存筆記
+      </button>
+
+      <button
+        id="playAllBtn"
+        class="secondary-btn"
+      >
+        ▶️ 全部播放
+      </button>
+
+    </div>
+
+
+    <p
+      id="detailMessage"
+      class="message"
+    ></p>
 
   `;
 
 
-  const englishNotesInput =
+  /* =====================================================
+     按鈕事件
+  ===================================================== */
+
+  const backBtn =
     document.getElementById(
-      "englishNotesInput"
+      "backToWordsBtn"
     );
 
-  const chineseNotesInput =
-    document.getElementById(
-      "chineseNotesInput"
+  if (backBtn) {
+
+    backBtn.addEventListener(
+      "click",
+      closeWordDetail
     );
 
-  if (englishNotesInput) {
-    englishNotesInput.value =
-      englishNotes;
   }
 
-  if (chineseNotesInput) {
-    chineseNotesInput.value =
-      chineseNotes;
+
+  const deleteBtn =
+    document.getElementById(
+      "deleteWordBtn"
+    );
+
+  if (deleteBtn) {
+
+    deleteBtn.addEventListener(
+      "click",
+      () => deleteWord(word.id)
+    );
+
   }
 
 
-  const meaningAudioBtn =
+  const audioBtn =
     document.getElementById(
-      "meaningAudioBtn"
+      "wordAudioBtn"
     );
 
-  if (meaningAudioBtn) {
+  if (audioBtn) {
 
-    meaningAudioBtn.addEventListener(
+    audioBtn.addEventListener(
       "click",
       () => {
 
-        playChinese(
-          word.chinese_meaning
+        playAudioUrl(
+          word.audio_url,
+          word.word,
+          "en-US"
         );
 
       }
+    );
+
+  }
+
+
+  const chineseMeaningAudioBtn =
+    document.getElementById(
+      "chineseMeaningAudioBtn"
+    );
+
+  if (chineseMeaningAudioBtn) {
+
+    chineseMeaningAudioBtn.addEventListener(
+      "click",
+      () => playChinese(
+        word.chinese_meaning
+      )
     );
 
   }
@@ -1417,13 +1666,9 @@ function renderWordDetail(word) {
 
     definitionAudioBtn.addEventListener(
       "click",
-      () => {
-
-        playEnglish(
-          word.definition_en
-        );
-
-      }
+      () => playEnglish(
+        word.definition_en
+      )
     );
 
   }
@@ -1438,13 +1683,9 @@ function renderWordDetail(word) {
 
     exampleEnAudioBtn.addEventListener(
       "click",
-      () => {
-
-        playEnglish(
-          word.example_en
-        );
-
-      }
+      () => playEnglish(
+        word.example_en
+      )
     );
 
   }
@@ -1459,31 +1700,32 @@ function renderWordDetail(word) {
 
     exampleZhAudioBtn.addEventListener(
       "click",
-      () => {
-
-        playChinese(
-          word.example_zh
-        );
-
-      }
+      () => playChinese(
+        word.example_zh
+      )
     );
 
   }
 
 
-  const englishNoteAudioBtn =
+  const englishNotesAudioBtn =
     document.getElementById(
-      "englishNoteAudioBtn"
+      "englishNotesAudioBtn"
     );
 
-  if (englishNoteAudioBtn) {
+  if (englishNotesAudioBtn) {
 
-    englishNoteAudioBtn.addEventListener(
+    englishNotesAudioBtn.addEventListener(
       "click",
       () => {
+
+        const input =
+          document.getElementById(
+            "englishNotesInput"
+          );
 
         playEnglish(
-          englishNotesInput?.value.trim()
+          input?.value || ""
         );
 
       }
@@ -1492,19 +1734,24 @@ function renderWordDetail(word) {
   }
 
 
-  const chineseNoteAudioBtn =
+  const chineseNotesAudioBtn =
     document.getElementById(
-      "chineseNoteAudioBtn"
+      "chineseNotesAudioBtn"
     );
 
-  if (chineseNoteAudioBtn) {
+  if (chineseNotesAudioBtn) {
 
-    chineseNoteAudioBtn.addEventListener(
+    chineseNotesAudioBtn.addEventListener(
       "click",
       () => {
 
+        const input =
+          document.getElementById(
+            "chineseNotesInput"
+          );
+
         playChinese(
-          chineseNotesInput?.value.trim()
+          input?.value || ""
         );
 
       }
@@ -1522,15 +1769,7 @@ function renderWordDetail(word) {
 
     saveNotesBtn.addEventListener(
       "click",
-      () => {
-
-        saveNotes(
-          word.id,
-          englishNotesInput,
-          chineseNotesInput
-        );
-
-      }
+      () => saveNotes(word.id)
     );
 
   }
@@ -1545,60 +1784,48 @@ function renderWordDetail(word) {
 
     playAllBtn.addEventListener(
       "click",
-      () => {
-
-        const updatedWord = {
-
-          ...word,
-
-          notes:
-            englishNotesInput?.value.trim() ||
-            ""
-
-        };
-
-        playAll(
-          updatedWord
-        );
-
-      }
+      () => playAll(word)
     );
 
   }
 
 
-  const deleteWordBtn =
-    document.getElementById(
-      "deleteWordBtn"
+  /*
+    自動捲到詳細資料
+  */
+
+  wordDetail.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+
+}
+
+
+/* =========================================================
+   關閉詳細資料
+========================================================= */
+
+function closeWordDetail() {
+
+  stopAllAudio();
+
+  if (wordDetail) {
+
+    wordDetail.classList.add(
+      "hidden"
     );
 
-  if (deleteWordBtn) {
-
-    deleteWordBtn.addEventListener(
-      "click",
-      () => {
-
-        deleteWord(
-          word.id
-        );
-
-      }
-    );
+    wordDetail.innerHTML = "";
 
   }
 
+  if (wordList) {
 
-  const backButton =
-    document.getElementById(
-      "backToWordsDetailBtn"
-    );
-
-  if (backButton) {
-
-    backButton.addEventListener(
-      "click",
-      closeWordDetail
-    );
+    wordList.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
 
   }
 
@@ -1609,11 +1836,22 @@ function renderWordDetail(word) {
    儲存筆記
 ========================================================= */
 
-async function saveNotes(
-  wordId,
-  englishInput,
-  chineseInput
-) {
+async function saveNotes(wordId) {
+
+  const englishInput =
+    document.getElementById(
+      "englishNotesInput"
+    );
+
+  const chineseInput =
+    document.getElementById(
+      "chineseNotesInput"
+    );
+
+  const detailMessage =
+    document.getElementById(
+      "detailMessage"
+    );
 
   const english =
     englishInput?.value.trim() || "";
@@ -1621,14 +1859,22 @@ async function saveNotes(
   const chinese =
     chineseInput?.value.trim() || "";
 
-  const noteSeparator =
-    "\n\n--- 中文筆記 ---\n\n";
+  let notes = "";
 
-  let notes = english;
+  if (english && chinese) {
 
-  if (chinese) {
+    notes =
+      english +
+      noteSeparator +
+      chinese;
 
-    notes +=
+  } else if (english) {
+
+    notes = english;
+
+  } else if (chinese) {
+
+    notes =
       noteSeparator +
       chinese;
 
@@ -1638,24 +1884,19 @@ async function saveNotes(
     data: {
       user
     }
-  } =
-    await supabaseClient.auth.getUser();
+  } = await supabaseClient.auth.getUser();
 
-  if (!user) {
-    return;
-  }
+  if (!user) return;
 
   const {
     error
-  } =
-    await supabaseClient
-      .from("words")
-      .update({
-        notes,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", wordId)
-      .eq("user_id", user.id);
+  } = await supabaseClient
+    .from("words")
+    .update({
+      notes
+    })
+    .eq("id", wordId)
+    .eq("user_id", user.id);
 
   if (error) {
 
@@ -1664,17 +1905,29 @@ async function saveNotes(
       error
     );
 
-    alert(
-      "儲存失敗：" +
-      error.message
-    );
+    if (detailMessage) {
+
+      detailMessage.textContent =
+        "儲存失敗：" +
+        error.message;
+
+      detailMessage.style.color =
+        "#d9534f";
+
+    }
 
     return;
   }
 
-  alert(
-    "筆記已儲存！"
-  );
+  if (detailMessage) {
+
+    detailMessage.textContent =
+      "筆記已儲存。";
+
+    detailMessage.style.color =
+      "";
+
+  }
 
 }
 
@@ -1686,7 +1939,7 @@ async function saveNotes(
 async function deleteWord(wordId) {
 
   const confirmed =
-    confirm(
+    window.confirm(
       "確定要刪除這個單字嗎？"
     );
 
@@ -1694,27 +1947,21 @@ async function deleteWord(wordId) {
     return;
   }
 
-  stopAllAudio();
-
   const {
     data: {
       user
     }
-  } =
-    await supabaseClient.auth.getUser();
+  } = await supabaseClient.auth.getUser();
 
-  if (!user) {
-    return;
-  }
+  if (!user) return;
 
   const {
     error
-  } =
-    await supabaseClient
-      .from("words")
-      .delete()
-      .eq("id", wordId)
-      .eq("user_id", user.id);
+  } = await supabaseClient
+    .from("words")
+    .delete()
+    .eq("id", wordId)
+    .eq("user_id", user.id);
 
   if (error) {
 
@@ -1731,6 +1978,8 @@ async function deleteWord(wordId) {
     return;
   }
 
+  stopAllAudio();
+
   closeWordDetail();
 
   await loadWords();
@@ -1739,7 +1988,7 @@ async function deleteWord(wordId) {
 
 
 /* =========================================================
-   Play All
+   全部播放
 ========================================================= */
 
 async function playAll(word) {
@@ -1749,1249 +1998,129 @@ async function playAll(word) {
   const generation =
     playAllGeneration;
 
-  async function wait(ms) {
+  const items = [];
 
-    return new Promise(
-      resolve =>
+  if (word.word) {
+
+    items.push({
+      text: word.word,
+      language: "en-US"
+    });
+
+  }
+
+  if (word.chinese_meaning) {
+
+    items.push({
+      text: word.chinese_meaning,
+      language: "zh-TW"
+    });
+
+  }
+
+  if (word.definition_en) {
+
+    items.push({
+      text: word.definition_en,
+      language: "en-US"
+    });
+
+  }
+
+  if (word.example_en) {
+
+    items.push({
+      text: word.example_en,
+      language: "en-US"
+    });
+
+  }
+
+  if (word.example_zh) {
+
+    items.push({
+      text: word.example_zh,
+      language: "zh-TW"
+    });
+
+  }
+
+  let index = 0;
+
+
+  function playNext() {
+
+    if (
+      generation !== playAllGeneration
+    ) {
+      return;
+    }
+
+    if (
+      index >= items.length
+    ) {
+      return;
+    }
+
+    const item =
+      items[index];
+
+    index++;
+
+    const utterance =
+      new SpeechSynthesisUtterance(
+        item.text
+      );
+
+    utterance.lang =
+      item.language;
+
+    utterance.rate =
+      item.language === "zh-TW"
+        ? 0.9
+        : 0.85;
+
+    utterance.onend =
+      () => {
+
+        if (
+          generation !==
+          playAllGeneration
+        ) {
+          return;
+        }
+
         setTimeout(
-          resolve,
-          ms
-        )
-    );
-
-  }
-
-  async function speakAndWait(
-    text,
-    language
-  ) {
-
-    if (!text) {
-      return true;
-    }
-
-    if (
-      generation !==
-      playAllGeneration
-    ) {
-
-      return false;
-
-    }
-
-    return new Promise(
-      resolve => {
-
-        const utterance =
-          new SpeechSynthesisUtterance(
-            text
-          );
-
-        utterance.lang =
-          language;
-
-        utterance.rate =
-          0.9;
-
-        utterance.onend = () => {
-          resolve(true);
-        };
-
-        utterance.onerror = () => {
-          resolve(false);
-        };
-
-        speechUtterance =
-          utterance;
-
-        window.speechSynthesis.speak(
-          utterance
+          playNext,
+          150
         );
-
-      }
-    );
-
-  }
-
-
-  if (word.audio_url) {
-
-    if (
-      generation !==
-      playAllGeneration
-    ) {
-      return;
-    }
-
-    const audio =
-      new Audio(
-        word.audio_url
-      );
-
-    currentAudio =
-      audio;
-
-    await new Promise(
-      resolve => {
-
-        audio.onended =
-          resolve;
-
-        audio.onerror =
-          resolve;
-
-        audio.play()
-          .catch(resolve);
-
-      }
-    );
-
-    if (
-      currentAudio === audio
-    ) {
-
-      currentAudio =
-        null;
-
-    }
-
-  } else {
-
-    const ok =
-      await speakAndWait(
-        word.word,
-        "en-US"
-      );
-
-    if (!ok) {
-      return;
-    }
-
-  }
-
-
-  await wait(250);
-
-
-  if (
-    generation !==
-    playAllGeneration
-  ) {
-    return;
-  }
-
-
-  await speakAndWait(
-    word.chinese_meaning,
-    "zh-TW"
-  );
-
-
-  await wait(250);
-
-
-  if (
-    generation !==
-    playAllGeneration
-  ) {
-    return;
-  }
-
-
-  await speakAndWait(
-    word.definition_en,
-    "en-US"
-  );
-
-
-  await wait(250);
-
-
-  if (
-    generation !==
-    playAllGeneration
-  ) {
-    return;
-  }
-
-
-  await speakAndWait(
-    word.example_en,
-    "en-US"
-  );
-
-
-  await wait(250);
-
-
-  if (
-    generation !==
-    playAllGeneration
-  ) {
-    return;
-  }
-
-
-  await speakAndWait(
-    word.example_zh,
-    "zh-TW"
-  );
-
-}
-
-
-/* =========================================================
-   複習測驗
-========================================================= */
-
-let quizState = {
-
-  words: [],
-
-  questions: [],
-
-  currentIndex: 0,
-
-  score: 0,
-
-  answered: false
-
-};
-
-
-function shuffleArray(array) {
-
-  const result =
-    [...array];
-
-  for (
-    let i = result.length - 1;
-    i > 0;
-    i--
-  ) {
-
-    const j =
-      Math.floor(
-        Math.random() *
-        (i + 1)
-      );
-
-    [
-      result[i],
-      result[j]
-    ] =
-    [
-      result[j],
-      result[i]
-    ];
-
-  }
-
-  return result;
-
-}
-
-
-/* =========================================================
-   建立測驗入口
-========================================================= */
-
-function createQuizEntry() {
-
-  if (!appSection) {
-    return;
-  }
-
-  if (
-    document.getElementById(
-      "quizEntryArea"
-    )
-  ) {
-    return;
-  }
-
-  const area =
-    document.createElement(
-      "div"
-    );
-
-  area.id =
-    "quizEntryArea";
-
-  area.innerHTML = `
-    <button
-      type="button"
-      id="startQuizBtn"
-    >
-      📚 開始複習測驗
-    </button>
-  `;
-
-  appSection.insertBefore(
-    area,
-    appSection.firstChild
-  );
-
-  const button =
-    document.getElementById(
-      "startQuizBtn"
-    );
-
-  if (button) {
-
-    button.addEventListener(
-      "click",
-      startQuiz
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   建立測驗區
-========================================================= */
-
-function createQuizArea() {
-
-  if (!appSection) {
-    return;
-  }
-
-  if (
-    document.getElementById(
-      "quizArea"
-    )
-  ) {
-    return;
-  }
-
-  const area =
-    document.createElement(
-      "div"
-    );
-
-  area.id =
-    "quizArea";
-
-  area.style.display =
-    "none";
-
-  appSection.appendChild(
-    area
-  );
-
-}
-
-
-/* =========================================================
-   開始測驗
-========================================================= */
-
-async function startQuiz() {
-
-  stopAllAudio();
-
-  const {
-    data: {
-      user
-    }
-  } =
-    await supabaseClient.auth.getUser();
-
-  if (!user) {
-    return;
-  }
-
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from("words")
-      .select(`
-        id,
-        word,
-        phonetic,
-        chinese_meaning,
-        definition_en,
-        example_en,
-        example_zh,
-        audio_url
-      `)
-      .eq("user_id", user.id);
-
-  if (error) {
-
-    console.error(
-      "取得測驗單字失敗：",
-      error
-    );
-
-    alert(
-      "取得測驗資料失敗。"
-    );
-
-    return;
-  }
-
-  if (!data || data.length < 4) {
-
-    alert(
-      "至少需要 4 個單字才能開始測驗。"
-    );
-
-    return;
-  }
-
-  quizState.words =
-    data;
-
-  quizState.questions =
-    createQuizQuestions(
-      data
-    );
-
-  quizState.currentIndex =
-    0;
-
-  quizState.score =
-    0;
-
-  quizState.answered =
-    false;
-
-  showQuizArea();
-
-  renderQuizQuestion();
-
-}
-
-
-/* =========================================================
-   建立題目
-========================================================= */
-
-function createQuizQuestions(words) {
-
-  const shuffled =
-    shuffleArray(words);
-
-  const selected =
-    shuffled.slice(
-      0,
-      Math.min(
-        10,
-        shuffled.length
-      )
-    );
-
-  return selected.map(
-    word => {
-
-      const types = [
-        "enToZh",
-        "zhToEn",
-        "listen"
-      ];
-
-      const type =
-        types[
-          Math.floor(
-            Math.random() *
-            types.length
-          )
-        ];
-
-      let options;
-
-      if (
-        type === "enToZh"
-      ) {
-
-        options =
-          createOptions(
-            word,
-            words,
-            "chinese_meaning"
-          );
-
-      } else {
-
-        options =
-          createOptions(
-            word,
-            words,
-            "word"
-          );
-
-      }
-
-      return {
-
-        word,
-
-        type,
-
-        options,
-
-        answer:
-          type === "enToZh"
-            ? word.chinese_meaning
-            : word.word
 
       };
 
-    }
-  );
-
-}
-
-
-/* =========================================================
-   建立四個選項
-========================================================= */
-
-function createOptions(
-  answerWord,
-  words,
-  field
-) {
-
-  const correct =
-    answerWord[field];
-
-  const others =
-    shuffleArray(
-      words.filter(
-        item =>
-          item.id !==
-          answerWord.id &&
-          item[field]
-      )
-    )
-    .slice(
-      0,
-      3
-    )
-    .map(
-      item =>
-        item[field]
-    );
-
-  return shuffleArray([
-    correct,
-    ...others
-  ]);
-
-}
-
-
-/* =========================================================
-   顯示測驗區
-========================================================= */
-
-function showQuizArea() {
-
-  const quizArea =
-    document.getElementById(
-      "quizArea"
-    );
-
-  if (!quizArea) {
-    return;
-  }
-
-  quizArea.style.display =
-    "";
-
-  const quizEntry =
-    document.getElementById(
-      "quizEntryArea"
-    );
-
-  if (quizEntry) {
-    quizEntry.style.display =
-      "none";
-  }
-
-  const normalChildren =
-    Array.from(
-      appSection.children
-    );
-
-  normalChildren.forEach(
-    child => {
-
-      if (
-        child.id !==
-        "quizArea" &&
-        child.id !==
-        "quizEntryArea"
-      ) {
-
-        child.dataset.quizHidden =
-          child.style.display;
-
-        child.style.display =
-          "none";
-
-      }
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   關閉測驗
-========================================================= */
-
-function hideQuizArea() {
-
-  const quizArea =
-    document.getElementById(
-      "quizArea"
-    );
-
-  if (quizArea) {
-
-    quizArea.style.display =
-      "none";
-
-  }
-
-  const quizEntry =
-    document.getElementById(
-      "quizEntryArea"
-    );
-
-  if (quizEntry) {
-
-    quizEntry.style.display =
-      "";
-
-  }
-
-  if (!appSection) {
-    return;
-  }
-
-  Array.from(
-    appSection.children
-  ).forEach(
-    child => {
-
-      if (
-        child.id !==
-        "quizArea" &&
-        child.id !==
-        "quizEntryArea"
-      ) {
-
-        child.style.display =
-          child.dataset.quizHidden ||
-          "";
-
-      }
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   顯示測驗題目
-========================================================= */
-
-function renderQuizQuestion() {
-
-  const quizArea =
-    document.getElementById(
-      "quizArea"
-    );
-
-  if (!quizArea) {
-    return;
-  }
-
-  const index =
-    quizState.currentIndex;
-
-  const total =
-    quizState.questions.length;
-
-  if (
-    index >= total
-  ) {
-
-    renderQuizResult();
-
-    return;
-  }
-
-  const question =
-    quizState.questions[index];
-
-  quizState.answered =
-    false;
-
-  let questionText =
-    "";
-
-  if (
-    question.type ===
-    "enToZh"
-  ) {
-
-    questionText =
-      `
-        <div class="quiz-label">
-          英文 → 中文
-        </div>
-
-        <div class="quiz-question-word">
-          ${escapeHtml(
-            question.word.word
-          )}
-        </div>
-      `;
-
-  } else if (
-    question.type ===
-    "zhToEn"
-  ) {
-
-    questionText =
-      `
-        <div class="quiz-label">
-          中文 → 英文
-        </div>
-
-        <div class="quiz-question-word">
-          ${escapeHtml(
-            question.word.chinese_meaning
-          )}
-        </div>
-      `;
-
-  } else {
-
-    questionText =
-      `
-        <div class="quiz-label">
-          聽發音選單字
-        </div>
-
-        <button
-          type="button"
-          id="quizListenBtn"
-        >
-          🔊 播放
-        </button>
-      `;
-
-  }
-
-  quizArea.innerHTML = `
-
-    <div class="quiz-container">
-
-      <div class="quiz-progress">
-        第 ${index + 1} / ${total} 題
-      </div>
-
-      <div class="quiz-score">
-        目前得分：${quizState.score}
-      </div>
-
-      <div class="quiz-question">
-        ${questionText}
-      </div>
-
-      <div
-        id="quizOptions"
-        class="quiz-options"
-      >
-
-        ${question.options.map(
-          option => `
-            <button
-              type="button"
-              class="quiz-option"
-              data-option="${escapeHtml(
-                option
-              )}"
-            >
-              ${escapeHtml(option)}
-            </button>
-          `
-        ).join("")}
-
-      </div>
-
-      <div
-        id="quizFeedback"
-        class="quiz-feedback"
-      ></div>
-
-      <div
-        id="quizFollowArea"
-        style="display:none;"
-      >
-        <button
-          type="button"
-          id="quizFollowBtn"
-        >
-          🎤 跟著讀
-        </button>
-
-        <div
-          id="quizFollowResult"
-        ></div>
-      </div>
-
-      <button
-        type="button"
-        id="quizNextBtn"
-        style="display:none;"
-      >
-        下一題 →
-      </button>
-
-      <button
-        type="button"
-        id="quizExitBtn"
-      >
-        返回
-      </button>
-
-    </div>
-
-  `;
-
-
-  document
-    .querySelectorAll(
-      ".quiz-option"
-    )
-    .forEach(
-      button => {
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            answerQuiz(
-              button.dataset.option,
-              button
-            );
-
-          }
-        );
-
-      }
-    );
-
-
-  const listenButton =
-    document.getElementById(
-      "quizListenBtn"
-    );
-
-  if (listenButton) {
-
-    listenButton.addEventListener(
-      "click",
+    utterance.onerror =
       () => {
-
-        playAudioUrl(
-          question.word.audio_url,
-          question.word.word,
-          "en-US"
-        );
-
-      }
-    );
-
-  }
-
-
-  const nextButton =
-    document.getElementById(
-      "quizNextBtn"
-    );
-
-  if (nextButton) {
-
-    nextButton.addEventListener(
-      "click",
-      () => {
-
-        quizState.currentIndex++;
-
-        renderQuizQuestion();
-
-      }
-    );
-
-  }
-
-
-  const exitButton =
-    document.getElementById(
-      "quizExitBtn"
-    );
-
-  if (exitButton) {
-
-    exitButton.addEventListener(
-      "click",
-      () => {
-
-        stopAllAudio();
-
-        hideQuizArea();
-
-      }
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   回答測驗
-========================================================= */
-
-function answerQuiz(
-  selected,
-  selectedButton
-) {
-
-  if (quizState.answered) {
-    return;
-  }
-
-  quizState.answered =
-    true;
-
-  const question =
-    quizState.questions[
-      quizState.currentIndex
-    ];
-
-  const correct =
-    question.answer;
-
-  const isCorrect =
-    selected === correct;
-
-  const feedback =
-    document.getElementById(
-      "quizFeedback"
-    );
-
-  document
-    .querySelectorAll(
-      ".quiz-option"
-    )
-    .forEach(
-      button => {
-
-        button.disabled =
-          true;
 
         if (
-          button.dataset.option ===
-          correct
+          generation !==
+          playAllGeneration
         ) {
-
-          button.classList.add(
-            "correct"
-          );
-
+          return;
         }
 
-      }
-    );
+        playNext();
 
+      };
 
-  if (isCorrect) {
+    currentUtterance =
+      utterance;
 
-    quizState.score++;
-
-    selectedButton.classList.add(
-      "correct"
-    );
-
-    if (feedback) {
-
-      feedback.textContent =
-        "✅ 答對了！";
-
-    }
-
-  } else {
-
-    selectedButton.classList.add(
-      "wrong"
-    );
-
-    if (feedback) {
-
-      feedback.textContent =
-        `❌ 答錯了。正確答案是：${correct}`;
-
-    }
-
-  }
-
-
-  const followArea =
-    document.getElementById(
-      "quizFollowArea"
-    );
-
-  if (followArea) {
-
-    followArea.style.display =
-      "";
-
-  }
-
-
-  const followButton =
-    document.getElementById(
-      "quizFollowBtn"
-    );
-
-  if (followButton) {
-
-    followButton.onclick =
-      () => startFollowReading(
-        question.word.word
-      );
-
-  }
-
-
-  const nextButton =
-    document.getElementById(
-      "quizNextBtn"
-    );
-
-  if (nextButton) {
-
-    nextButton.style.display =
-      "";
-
-  }
-
-}
-
-
-/* =========================================================
-   跟讀
-========================================================= */
-
-function startFollowReading(text) {
-
-  const result =
-    document.getElementById(
-      "quizFollowResult"
-    );
-
-  if (
-    !(
-      window.SpeechRecognition ||
-      window.webkitSpeechRecognition
-    )
-  ) {
-
-    if (result) {
-
-      result.textContent =
-        "你的瀏覽器不支援語音跟讀功能。";
-
-    }
-
-    return;
-  }
-
-  const Recognition =
-    window.SpeechRecognition ||
-    window.webkitSpeechRecognition;
-
-  const recognition =
-    new Recognition();
-
-  recognition.lang =
-    "en-US";
-
-  recognition.interimResults =
-    false;
-
-  recognition.continuous =
-    false;
-
-  if (result) {
-
-    result.textContent =
-      "🎤 請跟著讀……";
-
-  }
-
-  recognition.onresult =
-    event => {
-
-      const spoken =
-        event.results[0][0]
-          .transcript
-          .trim();
-
-      if (result) {
-
-        result.textContent =
-          `你說的是：「${spoken}」`;
-
-      }
-
-    };
-
-  recognition.onerror =
-    event => {
-
-      if (result) {
-
-        result.textContent =
-          "沒有辨識成功，請再試一次。";
-
-      }
-
-    };
-
-  recognition.onend =
-    () => {
-
-      if (result &&
-          !result.textContent) {
-
-        result.textContent =
-          "跟讀結束。";
-
-      }
-
-    };
-
-  recognition.start();
-
-}
-
-
-/* =========================================================
-   測驗結果
-========================================================= */
-
-function renderQuizResult() {
-
-  const quizArea =
-    document.getElementById(
-      "quizArea"
-    );
-
-  if (!quizArea) {
-    return;
-  }
-
-  const total =
-    quizState.questions.length;
-
-  quizArea.innerHTML = `
-
-    <div class="quiz-container">
-
-      <h2>
-        🎉 測驗完成
-      </h2>
-
-      <p class="quiz-final-score">
-        你的分數：
-        ${quizState.score}
-        /
-        ${total}
-      </p>
-
-      <button
-        type="button"
-        id="quizRetryBtn"
-      >
-        🔄 再測一次
-      </button>
-
-      <button
-        type="button"
-        id="quizFinishBtn"
-      >
-        ← 回到單字
-      </button>
-
-    </div>
-
-  `;
-
-
-  const retryButton =
-    document.getElementById(
-      "quizRetryBtn"
-    );
-
-  if (retryButton) {
-
-    retryButton.addEventListener(
-      "click",
-      () => {
-
-        quizState.questions =
-          createQuizQuestions(
-            quizState.words
-          );
-
-        quizState.currentIndex =
-          0;
-
-        quizState.score =
-          0;
-
-        renderQuizQuestion();
-
-      }
+    window.speechSynthesis.speak(
+      utterance
     );
 
   }
 
-
-  const finishButton =
-    document.getElementById(
-      "quizFinishBtn"
-    );
-
-  if (finishButton) {
-
-    finishButton.addEventListener(
-      "click",
-      () => {
-
-        hideQuizArea();
-
-      }
-    );
-
-  }
+  playNext();
 
 }
 
@@ -3032,6 +2161,18 @@ async function checkUser() {
 supabaseClient.auth.onAuthStateChange(
   async (event, session) => {
 
+    /*
+      INITIAL_SESSION：
+      checkUser() 會處理，
+      避免重複載入。
+    */
+
+    if (
+      event === "INITIAL_SESSION"
+    ) {
+      return;
+    }
+
     if (session?.user) {
 
       await showCurrentUser(
@@ -3049,7 +2190,7 @@ supabaseClient.auth.onAuthStateChange(
 
 
 /* =========================================================
-   事件
+   按鈕事件
 ========================================================= */
 
 if (loginBtn) {
@@ -3092,21 +2233,28 @@ if (addWordBtn) {
 }
 
 
-if (newWordInput) {
+if (searchBtn) {
 
-  newWordInput.addEventListener(
+  searchBtn.addEventListener(
+    "click",
+    searchWords
+  );
+
+}
+
+
+/* =========================================================
+   Enter 快捷鍵
+========================================================= */
+
+if (passwordInput) {
+
+  passwordInput.addEventListener(
     "keydown",
     event => {
 
-      if (
-        event.key ===
-        "Enter"
-      ) {
-
-        event.preventDefault();
-
-        addWord();
-
+      if (event.key === "Enter") {
+        login();
       }
 
     }
@@ -3115,32 +2263,56 @@ if (newWordInput) {
 }
 
 
-if (wordSearchInput) {
+if (usernameInput) {
 
-  wordSearchInput.addEventListener(
-    "input",
-    searchWords
+  usernameInput.addEventListener(
+    "keydown",
+    event => {
+
+      if (event.key === "Enter") {
+        login();
+      }
+
+    }
   );
 
 }
 
 
-if (backToWordsBtn) {
+if (newWordInput) {
 
-  backToWordsBtn.addEventListener(
-    "click",
-    closeWordDetail
+  newWordInput.addEventListener(
+    "keydown",
+    event => {
+
+      if (event.key === "Enter") {
+        addWord();
+      }
+
+    }
+  );
+
+}
+
+
+if (searchInput) {
+
+  searchInput.addEventListener(
+    "keydown",
+    event => {
+
+      if (event.key === "Enter") {
+        searchWords();
+      }
+
+    }
   );
 
 }
 
 
 /* =========================================================
-   初始化
+   啟動 App
 ========================================================= */
-
-createQuizEntry();
-
-createQuizArea();
 
 checkUser();
