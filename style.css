@@ -516,3 +516,162 @@ button {
     font-size: 30px;
   }
 }
+
+/* =========================
+   資料來源與授權
+   ========================= */
+
+.data-source-section {
+  margin-top: 30px;
+  padding: 0 10px 30px;
+  text-align: center;
+}
+
+.data-source-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 18px;
+  font-size: 14px;
+  cursor: pointer;
+  background: #f3f4f6;
+  color: #374151;
+  transition: 0.2s;
+}
+
+.data-source-btn:hover {
+  background: #e5e7eb;
+}
+
+.data-source-content {
+  max-width: 700px;
+  margin: 15px auto 0;
+  padding: 20px;
+  text-align: left;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  line-height: 1.7;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.data-source-content h3 {
+  margin-top: 0;
+  color: #1f2937;
+}
+
+.data-source-content a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.data-source-content a:hover {
+  text-decoration: underline;
+}
+
+.data-source-content code {
+  background: #e5e7eb;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.hidden {
+  display: none;
+}
+
+/* 手機版 */
+@media (max-width: 600px) {
+  .data-source-section {
+    margin-top: 20px;
+    padding-bottom: 20px;
+  }
+
+  .data-source-content {
+    padding: 16px;
+    font-size: 13px;
+  }
+
+  .data-source-btn {
+    font-size: 13px;
+    padding: 9px 15px;
+  }
+}
+
+/* =========================
+   資料來源與授權
+   ========================= */
+
+.data-source-section {
+  margin-top: 30px;
+  padding: 0 10px 30px;
+  text-align: center;
+}
+
+.data-source-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 18px;
+  font-size: 14px;
+  cursor: pointer;
+  background: #f3f4f6;
+  color: #374151;
+  transition: 0.2s;
+}
+
+.data-source-btn:hover {
+  background: #e5e7eb;
+}
+
+.data-source-content {
+  max-width: 700px;
+  margin: 15px auto 0;
+  padding: 20px;
+  text-align: left;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  line-height: 1.7;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.data-source-content h3 {
+  margin-top: 0;
+  color: #1f2937;
+}
+
+.data-source-content a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.data-source-content a:hover {
+  text-decoration: underline;
+}
+
+.data-source-content code {
+  background: #e5e7eb;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.hidden {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .data-source-section {
+    margin-top: 20px;
+    padding-bottom: 20px;
+  }
+
+  .data-source-content {
+    padding: 16px;
+    font-size: 13px;
+  }
+
+  .data-source-btn {
+    font-size: 13px;
+    padding: 9px 15px;
+  }
+}
