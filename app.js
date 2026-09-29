@@ -575,11 +575,6 @@ async function loadWords() {
 
 }
 
-
-/* =========================================================
-   顯示單字列表
-========================================================= */
-
 function displayWords(words) {
 
   if (!wordList) return;
@@ -603,89 +598,111 @@ function displayWords(words) {
           class="word-item"
           data-word-id="${escapeHtml(word.id)}"
           style="
-            cursor:pointer;
-            padding:12px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:12px;
+            padding:14px 16px;
             margin:8px 0;
             border-radius:10px;
             border:1px solid #e5e5e5;
+            background:#fff;
           "
         >
 
           <div
+            class="word-main"
             style="
-              display:flex;
-              justify-content:space-between;
-              align-items:center;
-              gap:10px;
+              flex:1;
+              cursor:pointer;
             "
           >
 
-            <div>
-
-              <strong>
-                ${escapeHtml(word.word)}
-              </strong>
-
-              ${
-                word.phonetic
-                  ? `
-                    <span
-                      style="
-                        margin-left:8px;
-                        color:#777;
-                      "
-                    >
-                      ${escapeHtml(word.phonetic)}
-                    </span>
-                  `
-                  : ""
-              }
-
-            </div>
-
-            <span
+            <strong
               style="
-                color:#777;
-                font-size:13px;
+                font-size:18px;
               "
             >
-              學習
-            </span>
+              ${escapeHtml(word.word)}
+            </strong>
+
+            ${
+              word.phonetic
+                ? `
+                  <span
+                    style="
+                      margin-left:8px;
+                      color:#777;
+                      font-size:14px;
+                    "
+                  >
+                    ${escapeHtml(word.phonetic)}
+                  </span>
+                `
+                : ""
+            }
 
           </div>
 
-          ${
-            word.chinese_meaning
-              ? `
-                <div
-                  style="
-                    margin-top:5px;
-                    color:#666;
-                  "
-                >
-                  ${escapeHtml(word.chinese_meaning)}
-                </div>
-              `
-              : ""
-          }
+
+          <button
+            class="review-word-btn secondary-btn"
+            data-word-id="${escapeHtml(word.id)}"
+            type="button"
+          >
+            🔄 再學一次
+          </button>
 
         </div>
       `;
 
     }).join("");
 
+
+  /* 點單字 → 開啟詳細資料 */
+
   document
-    .querySelectorAll(".word-item")
+    .querySelectorAll(".word-main")
     .forEach(item => {
 
       item.addEventListener(
         "click",
         () => {
 
-          const id =
-            item.dataset.wordId;
+          const parent =
+            item.closest(".word-item");
 
-          openWordDetail(id);
+          const id =
+            parent?.dataset.wordId;
+
+          if (id) {
+            openWordDetail(id);
+          }
+
+        }
+      );
+
+    });
+
+
+  /* 再學一次 */
+
+  document
+    .querySelectorAll(".review-word-btn")
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        event => {
+
+          event.stopPropagation();
+
+          const id =
+            button.dataset.wordId;
+
+          if (id) {
+            openWordDetail(id);
+          }
 
         }
       );
@@ -693,7 +710,6 @@ function displayWords(words) {
     });
 
 }
-
 
 /* =========================================================
    搜尋單字
