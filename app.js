@@ -4931,5 +4931,12 @@ function showQuizWrongAnswers() {
 /* =========================================================
    初始化複習測驗
 ========================================================= */
+function createQuizUI() {
 
+  console.log("開始建立測驗 UI");
+  console.log("appSection =", appSection);
+
+  if (document.getElementById("quizEntryBtn")) {
+    return;
+  }
 createQuizUI();
