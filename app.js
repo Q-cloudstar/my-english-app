@@ -2,7 +2,6 @@
    Supabase 設定
 ========================================================= */
 
-//
 const SUPABASE_URL = "https://vydgrdgpcrzsculxicww.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_tFYfMXuvOayfOkWK8dqfug_YEIvCg5l";
 
@@ -81,7 +80,9 @@ function usernameToInternalEmail(username) {
   const encoded =
     Array.from(bytes)
       .map(byte =>
-        byte.toString(16).padStart(2, "0")
+        byte
+          .toString(16)
+          .padStart(2, "0")
       )
       .join("");
 
@@ -108,7 +109,9 @@ function validateUsername(username) {
   }
 
   if (
-    !/^[A-Za-z0-9_\-\u4e00-\u9fff]+$/.test(username)
+    !/^[A-Za-z0-9_\-\u4e00-\u9fff]+$/.test(
+      username
+    )
   ) {
     return "帳號只能使用中文、英文、數字、底線或連字號";
   }
@@ -123,19 +126,29 @@ function validateUsername(username) {
 
 function showAuth() {
 
-  authSection.classList.remove("hidden");
+  authSection.classList.remove(
+    "hidden"
+  );
 
-  appSection.classList.add("hidden");
+  appSection.classList.add(
+    "hidden"
+  );
 
-  wordDetail.classList.add("hidden");
+  wordDetail.classList.add(
+    "hidden"
+  );
 }
 
 
 function showApp() {
 
-  authSection.classList.add("hidden");
+  authSection.classList.add(
+    "hidden"
+  );
 
-  appSection.classList.remove("hidden");
+  appSection.classList.remove(
+    "hidden"
+  );
 
   loadWords();
 }
@@ -262,16 +275,19 @@ loginBtn.addEventListener(
     try {
 
       const email =
-        usernameToInternalEmail(username);
+        usernameToInternalEmail(
+          username
+        );
 
       const {
         data,
         error
       } =
-        await supabaseClient.auth.signInWithPassword({
-          email,
-          password
-        });
+        await supabaseClient.auth
+          .signInWithPassword({
+            email,
+            password
+          });
 
       if (error) {
 
@@ -361,16 +377,19 @@ signupBtn.addEventListener(
     try {
 
       const email =
-        usernameToInternalEmail(username);
+        usernameToInternalEmail(
+          username
+        );
 
       const {
         data,
         error
       } =
-        await supabaseClient.auth.signUp({
-          email,
-          password
-        });
+        await supabaseClient.auth
+          .signUp({
+            email,
+            password
+          });
 
       if (error) {
 
@@ -453,7 +472,6 @@ logoutBtn.addEventListener(
     await supabaseClient.auth.signOut();
 
     usernameInput.value = "";
-
     passwordInput.value = "";
 
     showAuth();
@@ -495,7 +513,8 @@ async function checkUser() {
       session
     }
   } =
-    await supabaseClient.auth.getSession();
+    await supabaseClient.auth
+      .getSession();
 
   if (session?.user) {
 
@@ -514,42 +533,4 @@ async function checkUser() {
    Auth 狀態監聽
 ========================================================= */
 
-supabaseClient.auth.onAuthStateChange(
-  async (event, session) => {
-
-    if (
-      event === "SIGNED_IN" &&
-      session?.user
-    ) {
-
-      await showCurrentUser(
-        session.user
-      );
-    }
-
-    if (
-      event === "SIGNED_OUT"
-    ) {
-
-      stopAllAudio();
-
-      showAuth();
-    }
-  }
-);
-
-
-/* =========================================================
-   載入我的單字
-========================================================= */
-
-async function loadWords(
-  searchTerm = ""
-) {
-
-  const {
-    data: {
-      user
-    }
-  } =
-    await supabaseClient.aut
+supabaseClient.auth.onA
