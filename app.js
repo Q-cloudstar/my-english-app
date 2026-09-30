@@ -5086,3 +5086,70 @@ if (document.readyState === "loading") {
   initWordListLayout();
 
 }
+
+/* =========================================================
+   我的單字數量統計
+   顯示目前登入帳號的全部單字數量
+========================================================= */
+
+async function refreshWordCount() {
+
+  const countElement =
+    document.getElementById("wordCount");
+
+  if (!countElement) {
+    return;
+  }
+
+  try {
+
+    const {
+      count,
+      error
+    } = await supabaseClient
+      .from("words")
+      .select("id", {
+        count: "exact",
+        head: true
+      });
+
+    if (error) {
+
+      console.error(
+        "取得單字數量失敗：",
+        error
+      );
+
+      return;
+    }
+
+    countElement.textContent =
+      `（${count || 0} 個）`;
+
+  } catch (error) {
+
+    console.error(
+      "單字數量統計發生錯誤：",
+      error
+    );
+
+  }
+}
+
+
+/* =========================================================
+   啟動後先統計一次
+========================================================= */
+
+if (document.readyState === "loading") {
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    refreshWordCount
+  );
+
+} else {
+
+  refreshWordCount();
+
+}
