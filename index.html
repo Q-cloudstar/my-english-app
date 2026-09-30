@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
@@ -13,164 +14,234 @@
 
   <main class="container">
 
-    <!-- =========================
-         登入區
-    ========================== -->
-    <section id="authSection" class="card">
+```
+<!-- =========================
+     登入區
+========================== -->
+<section id="authSection" class="card">
 
-      <div class="logo">📚</div>
+  <div class="logo">📚</div>
 
-      <h1>我的英文學習小書櫃</h1>
+  <h1>我的英文學習小書櫃</h1>
 
-      <p class="subtitle">
-        學單字、聽發音、慢慢累積自己的英文小書櫃
+  <p class="subtitle">
+    學單字、聽發音、慢慢累積自己的英文小書櫃
+  </p>
+
+  <div class="form-group">
+    <label for="username">帳號名稱</label>
+    <input
+      id="username"
+      type="text"
+      autocomplete="username"
+      placeholder="輸入帳號名稱"
+    >
+  </div>
+
+  <div class="form-group">
+    <label for="password">密碼</label>
+    <input
+      id="password"
+      type="password"
+      autocomplete="current-password"
+      placeholder="輸入密碼"
+    >
+  </div>
+
+  <div class="button-row">
+    <button id="loginBtn" class="primary-btn">
+      登入
+    </button>
+
+    <button id="signupBtn" class="secondary-btn">
+      註冊
+    </button>
+  </div>
+
+  <p id="authMessage" class="message"></p>
+
+</section>
+
+
+<!-- =========================
+     App 主畫面
+========================== -->
+<section id="appSection" class="hidden">
+
+  <header class="app-header">
+
+    <div>
+      <h1>📚 我的英文小書櫃</h1>
+      <p>
+        歡迎你，<span id="userName"></span>！
       </p>
+    </div>
 
-      <div class="form-group">
-        <label for="username">帳號名稱</label>
-        <input
-          id="username"
-          type="text"
-          autocomplete="username"
-          placeholder="輸入帳號名稱"
-        >
-      </div>
+    <button id="logoutBtn" class="logout-btn">
+      登出
+    </button>
 
-      <div class="form-group">
-        <label for="password">密碼</label>
-        <input
-          id="password"
-          type="password"
-          autocomplete="current-password"
-          placeholder="輸入密碼"
-        >
-      </div>
+  </header>
 
-      <div class="button-row">
-        <button id="loginBtn" class="primary-btn">
-          登入
-        </button>
 
-        <button id="signupBtn" class="secondary-btn">
-          註冊
-        </button>
-      </div>
+  <!-- =========================
+       新增單字
+  ========================== -->
+  <section class="card">
 
-      <p id="authMessage" class="message"></p>
+    <h2>➕ 新增單字</h2>
 
-    </section>
+    <div class="add-word-row">
 
+      <input
+        id="newWordInput"
+        type="text"
+        placeholder="輸入英文單字或片語，例如 apple、look after"
+        autocomplete="off"
+      >
+
+      <button id="addWordBtn" class="primary-btn">
+        加入
+      </button>
+
+    </div>
+
+    <p id="addWordMessage" class="message"></p>
+
+  </section>
+
+
+  <!-- =========================
+       單字工作區
+       左：單字列表
+       右：詳細資料
+  ========================== -->
+  <section class="word-workspace">
 
     <!-- =========================
-         App 主畫面
+         左側：我的單字
     ========================== -->
-    <section id="appSection" class="hidden">
+    <section class="card word-sidebar">
 
-      <header class="app-header">
+      <div class="word-sidebar-header">
 
         <div>
-          <h1>📚 我的英文小書櫃</h1>
-          <p>
-            歡迎你，<span id="userName"></span>！
-          </p>
+          <h2>
+            📚 我的單字
+            <span id="wordCount">
+              （0 個）
+            </span>
+          </h2>
         </div>
 
-        <button id="logoutBtn" class="logout-btn">
-          登出
+        <button
+          id="wordListToggleBtn"
+          class="word-list-toggle-btn"
+          type="button"
+          aria-expanded="true"
+          title="收合單字列表"
+        >
+          ▲
         </button>
 
-      </header>
+      </div>
 
 
       <!-- =========================
-           新增單字
+           搜尋
       ========================== -->
-      <section class="card">
+      <div class="search-row">
 
-        <h2>➕ 新增單字</h2>
+        <input
+          id="searchInput"
+          type="text"
+          placeholder="搜尋我的單字"
+          autocomplete="off"
+        >
 
-        <div class="add-word-row">
+        <button
+          id="searchBtn"
+          class="secondary-btn"
+          type="button"
+        >
+          搜尋
+        </button>
 
-          <input
-            id="newWordInput"
-            type="text"
-            placeholder="輸入英文單字或片語，例如 apple、look after"
-            autocomplete="off"
-          >
-
-          <button id="addWordBtn" class="primary-btn">
-            加入
-          </button>
-
-        </div>
-
-        <p id="addWordMessage" class="message"></p>
-
-      </section>
+      </div>
 
 
       <!-- =========================
-           搜尋自己的字庫
+           可收合的單字列表
       ========================== -->
-      <section class="card">
+      <div
+        id="wordListCollapsible"
+        class="word-list-collapsible"
+      >
 
-        <h2>🔎 我的單字</h2>
+        <div
+          id="wordList"
+          class="word-list"
+        ></div>
 
-        <div class="search-row">
+        <div
+          id="wordPagination"
+          class="word-pagination"
+        ></div>
 
-          <input
-            id="searchInput"
-            type="text"
-            placeholder="搜尋我的單字"
-            autocomplete="off"
-          >
-
-          <button id="searchBtn" class="secondary-btn">
-            搜尋
-          </button>
-
-        </div>
-
-        <div id="wordList" class="word-list"></div>
-
-      </section>
-
-
-      <!-- =========================
-           單字詳細資料
-      ========================== -->
-      <section
-        id="wordDetail"
-        class="card word-detail hidden"
-      ></section>
-
-
-      <details class="source-license">
-  <summary>📚 資料來源與授權說明</summary>
-
-  <div class="source-license-content">
-    <p>
-      字典資料：TOEIC Traditional Chinese Dictionary
-    </p>
-    <p>
-      英文定義與發音：Merriam-Webster Learner’s Dictionary
-    </p>
-    <p>
-      TOEIC 詞彙資料集授權：CC BY-SA 4.0
-    </p>
-  </div>
-</details>
-      </section>
+      </div>
 
     </section>
+
+
+    <!-- =========================
+         右側：單字詳細資料
+    ========================== -->
+    <section
+      id="wordDetail"
+      class="card word-detail hidden"
+    ></section>
+
+  </section>
+
+
+  <!-- =========================
+       資料來源
+  ========================== -->
+  <details class="source-license">
+
+    <summary>
+      📚 資料來源與授權說明
+    </summary>
+
+    <div class="source-license-content">
+
+      <p>
+        字典資料：TOEIC Traditional Chinese Dictionary
+      </p>
+
+      <p>
+        英文定義與發音：Merriam-Webster Learner’s Dictionary
+      </p>
+
+      <p>
+        TOEIC 詞彙資料集授權：CC BY-SA 4.0
+      </p>
+
+    </div>
+
+  </details>
+
+</section>
+```
 
   </main>
 
-
   <!-- Supabase -->
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- App -->
+
   <script src="app.js"></script>
 
 </body>
