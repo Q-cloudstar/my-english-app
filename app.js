@@ -4976,11 +4976,42 @@ if (
 
 }
 
+
 /* =========================================================
-   左側我的單字：收合功能
+   我的單字完整控制
+   功能：
+   1. 左側單字列表收合
+   2. 單字總數
+   3. 每頁 10 筆
+   4. 上一頁 / 下一頁
+   5. 頁碼
+   6. 搜尋後自動回到第 1 頁
+========================================================= */
+
+
+/* =========================================================
+   分頁設定
+========================================================= */
+
+let wordListCurrentPage = 1;
+
+const WORD_LIST_PER_PAGE = 10;
+
+let wordListCurrentData = [];
+
+let wordListOriginalDisplayWords = null;
+
+
+/* =========================================================
+   收合狀態
 ========================================================= */
 
 let wordListExpanded = true;
+
+
+/* =========================================================
+   初始化收合功能
+========================================================= */
 
 function initWordListLayout() {
 
@@ -4994,24 +5025,37 @@ function initWordListLayout() {
     return;
   }
 
+
   if (toggleBtn.dataset.initialized === "true") {
+    updateWordListLayout();
     return;
   }
 
+
   toggleBtn.dataset.initialized = "true";
 
-  toggleBtn.addEventListener("click", () => {
 
-    wordListExpanded =
-      !wordListExpanded;
+  toggleBtn.addEventListener(
+    "click",
+    () => {
 
-    updateWordListLayout();
+      wordListExpanded =
+        !wordListExpanded;
 
-  });
+      updateWordListLayout();
+
+    }
+  );
+
 
   updateWordListLayout();
+
 }
 
+
+/* =========================================================
+   更新收合畫面
+========================================================= */
 
 function updateWordListLayout() {
 
@@ -5021,13 +5065,17 @@ function updateWordListLayout() {
   const collapsible =
     document.getElementById("wordListCollapsible");
 
+
   if (!toggleBtn || !collapsible) {
     return;
   }
 
+
   if (wordListExpanded) {
 
-    collapsible.classList.remove("collapsed");
+    collapsible.classList.remove(
+      "collapsed"
+    );
 
     toggleBtn.textContent = "▲";
 
@@ -5039,9 +5087,12 @@ function updateWordListLayout() {
     toggleBtn.title =
       "收合單字列表";
 
+
   } else {
 
-    collapsible.classList.add("collapsed");
+    collapsible.classList.add(
+      "collapsed"
+    );
 
     toggleBtn.textContent = "▼";
 
@@ -5052,104 +5103,479 @@ function updateWordListLayout() {
 
     toggleBtn.title =
       "展開單字列表";
+
   }
+
 }
 
+
+/* =========================================================
+   更新單字總數
+========================================================= */
 
 function updateWordCount(count) {
 
   const countElement =
     document.getElementById("wordCount");
 
+
   if (!countElement) {
     return;
   }
+
 
   countElement.textContent =
-    `（${count} 個）`;
+    `（${count || 0} 個）`;
+
 }
 
 
 /* =========================================================
-   啟動我的單字收合功能
+   建立分頁
 ========================================================= */
 
-if (document.readyState === "loading") {
+function renderWordPagination(
+  totalCount
+) {
 
-  document.addEventListener(
-    "DOMContentLoaded",
-    initWordListLayout
-  );
+  const pagination =
+    document.getElementById(
+      "wordPagination"
+    );
 
-} else {
 
-  initWordListLayout();
-
-}
-
-/* =========================================================
-   我的單字數量統計
-   顯示目前登入帳號的全部單字數量
-========================================================= */
-
-async function refreshWordCount() {
-
-  const countElement =
-    document.getElementById("wordCount");
-
-  if (!countElement) {
+  if (!pagination) {
     return;
   }
 
-  try {
 
-    const {
-      count,
-      error
-    } = await supabaseClient
-      .from("words")
-      .select("id", {
-        count: "exact",
-        head: true
-      });
+  const totalPages =
+    Math.ceil(
+      totalCount /
+      WORD_LIST_PER_PAGE
+    );
 
-    if (error) {
 
-      console.error(
-        "取得單字數量失敗：",
-        error
-      );
+  /* 沒有資料或只有一頁 */
 
-      return;
-    }
+  if (
+    totalCount === 0 ||
+    totalPages <= 1
+  ) {
 
-    countElement.textContent =
-      `（${count || 0} 個）`;
+    pagination.innerHTML = "";
 
-  } catch (error) {
+    return;
 
-    console.error(
-      "單字數量統計發生錯誤：",
-      error
+  }
+
+
+  let html = "";
+
+
+  /* 上一頁 */
+
+  html += `
+    <button
+      type="button"
+      class="pagination-btn"
+      data-page-action="prev"
+      ${wordListCurrentPage <= 1 ? "disabled" : ""}
+    >
+      ← 上一頁
+    </button>
+  `;
+
+
+  /* 頁碼 */
+
+  for (
+    let page = 1;
+    page <= totalPages;
+    page++
+  ) {
+
+    html += `
+      <button
+        type="button"
+        class="pagination-btn ${
+          page === wordListCurrentPage
+            ? "active"
+            : ""
+        }"
+        data-page="${page}"
+        type="button"
+      >
+        ${page}
+      </button>
+    `;
+
+  }
+
+
+  /* 下一頁 */
+
+  html += `
+    <button
+      type="button"
+      class="pagination-btn"
+      data-page-action="next"
+      ${
+        wordListCurrentPage >= totalPages
+          ? "disabled"
+          : ""
+      }
+    >
+      下一頁 →
+    </button>
+  `;
+
+
+  pagination.innerHTML = html;
+
+
+  /* =====================================================
+     點擊上一頁
+  ===================================================== */
+
+  const prevBtn =
+    pagination.querySelector(
+      '[data-page-action="prev"]'
+    );
+
+
+  if (prevBtn) {
+
+    prevBtn.addEventListener(
+      "click",
+      () => {
+
+        if (
+          wordListCurrentPage <= 1
+        ) {
+          return;
+        }
+
+
+        wordListCurrentPage--;
+
+        renderCurrentWordPage();
+
+      }
     );
 
   }
+
+
+  /* =====================================================
+     點擊下一頁
+  ===================================================== */
+
+  const nextBtn =
+    pagination.querySelector(
+      '[data-page-action="next"]'
+    );
+
+
+  if (nextBtn) {
+
+    nextBtn.addEventListener(
+      "click",
+      () => {
+
+        const totalPages =
+          Math.ceil(
+            wordListCurrentData.length /
+            WORD_LIST_PER_PAGE
+          );
+
+
+        if (
+          wordListCurrentPage >=
+          totalPages
+        ) {
+          return;
+        }
+
+
+        wordListCurrentPage++;
+
+        renderCurrentWordPage();
+
+      }
+    );
+
+  }
+
+
+  /* =====================================================
+     點擊頁碼
+  ===================================================== */
+
+  pagination
+    .querySelectorAll(
+      "[data-page]"
+    )
+    .forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            const page =
+              Number(
+                button.dataset.page
+              );
+
+
+            if (!page) {
+              return;
+            }
+
+
+            wordListCurrentPage =
+              page;
+
+
+            renderCurrentWordPage();
+
+          }
+        );
+
+      }
+    );
+
 }
 
 
 /* =========================================================
-   啟動後先統計一次
+   顯示目前這一頁
 ========================================================= */
 
-if (document.readyState === "loading") {
+function renderCurrentWordPage() {
+
+  const totalCount =
+    wordListCurrentData.length;
+
+
+  const totalPages =
+    Math.ceil(
+      totalCount /
+      WORD_LIST_PER_PAGE
+    );
+
+
+  /* 確保目前頁碼有效 */
+
+  if (
+    totalPages === 0
+  ) {
+
+    wordListCurrentPage = 1;
+
+  } else if (
+    wordListCurrentPage >
+    totalPages
+  ) {
+
+    wordListCurrentPage =
+      totalPages;
+
+  }
+
+
+  const startIndex =
+    (
+      wordListCurrentPage - 1
+    ) *
+    WORD_LIST_PER_PAGE;
+
+
+  const endIndex =
+    startIndex +
+    WORD_LIST_PER_PAGE;
+
+
+  const pageWords =
+    wordListCurrentData.slice(
+      startIndex,
+      endIndex
+    );
+
+
+  /* =====================================================
+     交給原本的 displayWords()
+     
+     所以你原本：
+     - 點英文單字
+     - 🔊 發音
+     - 🔄 再學一次
+     
+     都會保留。
+  ===================================================== */
+
+  if (
+    typeof wordListOriginalDisplayWords ===
+    "function"
+  ) {
+
+    wordListOriginalDisplayWords(
+      pageWords
+    );
+
+  }
+
+
+  /* 更新分頁 */
+
+  renderWordPagination(
+    totalCount
+  );
+
+}
+
+
+/* =========================================================
+   攔截原本 displayWords()
+   
+   不修改原本 displayWords 裡面的內容。
+   只在外面加上分頁功能。
+========================================================= */
+
+function initWordListPagination() {
+
+  if (
+    typeof displayWords !==
+    "function"
+  ) {
+
+    console.warn(
+      "找不到原本的 displayWords()"
+    );
+
+    return;
+
+  }
+
+
+  /* 避免重複包裝 */
+
+  if (
+    displayWords.__paginationWrapped
+  ) {
+
+    return;
+
+  }
+
+
+  wordListOriginalDisplayWords =
+    displayWords;
+
+
+  function paginatedDisplayWords(
+    words
+  ) {
+
+    /* 確保一定是陣列 */
+
+    if (
+      !Array.isArray(words)
+    ) {
+
+      words = [];
+
+    }
+
+
+    /* 儲存目前完整資料 */
+
+    wordListCurrentData =
+      words;
+
+
+    /* 每次重新搜尋／重新載入時，
+       先回到第 1 頁 */
+
+    wordListCurrentPage = 1;
+
+
+    /* 更新單字總數 */
+
+    updateWordCount(
+      words.length
+    );
+
+
+    /* 顯示目前頁 */
+
+    renderCurrentWordPage();
+
+  }
+
+
+  paginatedDisplayWords.__paginationWrapped =
+    true;
+
+
+  /*
+     把全域 displayWords 替換成
+     加入分頁功能的新版本
+  */
+
+  displayWords =
+    paginatedDisplayWords;
+
+}
+
+
+/* =========================================================
+   初始化
+========================================================= */
+
+function initWordListFeatures() {
+
+  initWordListLayout();
+
+  initWordListPagination();
+
+}
+
+
+/* =========================================================
+   等待網頁完成後初始化
+========================================================= */
+
+if (
+  document.readyState ===
+  "loading"
+) {
 
   document.addEventListener(
     "DOMContentLoaded",
-    refreshWordCount
+    initWordListFeatures
   );
 
 } else {
 
-  refreshWordCount();
+  initWordListFeatures();
 
 }
+
+
+/* =========================================================
+   保險：如果原本的 app.js
+   在 DOMContentLoaded 後才建立單字列表，
+   再嘗試初始化一次。
+========================================================= */
+
+setTimeout(
+  () => {
+
+    initWordListFeatures();
+
+  },
+  500
+);
+
