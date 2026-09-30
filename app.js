@@ -4975,3 +4975,114 @@ if (
   initQuiz();
 
 }
+
+/* =========================================================
+   左側我的單字：收合功能
+========================================================= */
+
+let wordListExpanded = true;
+
+function initWordListLayout() {
+
+  const toggleBtn =
+    document.getElementById("wordListToggleBtn");
+
+  const collapsible =
+    document.getElementById("wordListCollapsible");
+
+  if (!toggleBtn || !collapsible) {
+    return;
+  }
+
+  if (toggleBtn.dataset.initialized === "true") {
+    return;
+  }
+
+  toggleBtn.dataset.initialized = "true";
+
+  toggleBtn.addEventListener("click", () => {
+
+    wordListExpanded =
+      !wordListExpanded;
+
+    updateWordListLayout();
+
+  });
+
+  updateWordListLayout();
+}
+
+
+function updateWordListLayout() {
+
+  const toggleBtn =
+    document.getElementById("wordListToggleBtn");
+
+  const collapsible =
+    document.getElementById("wordListCollapsible");
+
+  if (!toggleBtn || !collapsible) {
+    return;
+  }
+
+  if (wordListExpanded) {
+
+    collapsible.classList.remove("collapsed");
+
+    toggleBtn.textContent = "▲";
+
+    toggleBtn.setAttribute(
+      "aria-expanded",
+      "true"
+    );
+
+    toggleBtn.title =
+      "收合單字列表";
+
+  } else {
+
+    collapsible.classList.add("collapsed");
+
+    toggleBtn.textContent = "▼";
+
+    toggleBtn.setAttribute(
+      "aria-expanded",
+      "false"
+    );
+
+    toggleBtn.title =
+      "展開單字列表";
+  }
+}
+
+
+function updateWordCount(count) {
+
+  const countElement =
+    document.getElementById("wordCount");
+
+  if (!countElement) {
+    return;
+  }
+
+  countElement.textContent =
+    `（${count} 個）`;
+}
+
+
+/* =========================================================
+   啟動我的單字收合功能
+========================================================= */
+
+if (document.readyState === "loading") {
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    initWordListLayout
+  );
+
+} else {
+
+  initWordListLayout();
+
+}
